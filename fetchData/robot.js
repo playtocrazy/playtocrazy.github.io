@@ -1,4 +1,5 @@
-var phantom = require('node-phantom');
+var phantom = require('phantom');
+
 // phantom.create(function(err, ph) {
 //     console.log(ph);
 //     return ph.createPage(function(err, page) {
@@ -25,16 +26,15 @@ var phantom = require('node-phantom');
 //     });
 // },{parameters:{'ignore-ssl-errors': true, 'web-security': false}});
 
-phantom.create(function(ph) {
-  return ph.createPage(function(page) {
-    return page.open("http://www.google.com", function(status) {
-      console.log("opened google? ", status);
-      return page.evaluate((function() {
-        return document.title;
-      }), function(result) {
-        console.log('Page title is ' + result);
-        return ph.exit();
-      });
+phantom.create().then(function(ph) {
+    ph.createPage().then(function(page) {
+        page.open('http://www.twse.com.tw/ch/trading/exchange/TWTB4U/TWTB4U.php').then(function(status) {
+            console.log(status);
+            page.property('content').then(function(content) {
+                console.log(content);
+                page.close();
+                ph.exit();
+            });
+        });
     });
-  });
-},{parameters:{'ignore-ssl-errors': true, 'web-security': false}});
+});

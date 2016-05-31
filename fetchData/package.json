@@ -13,6 +13,7 @@
     "cheerio": "^0.20.0",
     "jsonfile": "^2.3.1",
     "node-phantom": "^0.2.5",
+    "phantom": "^2.1.2",
     "phantomjs": "^2.1.7",
     "request": "^2.72.0",
     "socket.io": "^1.4.6"
