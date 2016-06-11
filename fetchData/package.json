@@ -10,11 +10,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.4.0",
     "dateformat": "^1.0.12",
+    "each-done": "^1.0.0",
+    "fetch": "^1.1.0",
     "jsonfile": "^2.3.1",
     "node-horseman": "^3.0.1",
     "phantomjs": "^2.1.7",
-    "phantomjs-prebuilt": "^2.1.7",
+    "promise": "^7.1.1",
     "request": "^2.72.0"
   }
 }

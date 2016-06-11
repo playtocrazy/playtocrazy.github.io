@@ -1,12 +1,10 @@
 var Horseman = require('node-horseman');
 var phantomjs = require('phantomjs');
 var jsonfile = require('jsonfile');
-var dateFormat = require('dateformat');
 
-var crawl = function () {
-    var exeResult = false;
+var crawl = function (file, resolve, reject) {
     var jsondata = [];
-    var file = './out/' + dateFormat(new Date(), "yyyymmdd") + '_base.json';
+    var twexLength = 0, tpexLength = 0;
     var horseman = new Horseman({
         phantomPath: phantomjs.path,
         loadImages: false,
@@ -40,8 +38,9 @@ var crawl = function () {
         .then(function(twexJsonData) {
             if(twexJsonData && twexJsonData.length > 0){
                 jsondata = twexJsonData;
+                twexLength = twexJsonData.length;
             }else{
-                throw '# Getting TWEX data failed!';
+                reject("# Getting TWEX data failed!");
             }
         })
 
@@ -68,19 +67,27 @@ var crawl = function () {
         })
         .then(function(tpexJsonData) {
             if (tpexJsonData && tpexJsonData.length > 0) {
+                tpexLength = tpexJsonData.length;
                 jsondata = jsondata.concat(tpexJsonData);
-                jsonfile.writeFile(file, jsondata, function(err) {
-                    if(err) console.error("write json data failed: " + err);
-                })
-                exeResult = true;
             } else {
-                throw '# Getting TPEX data failed!';
+                reject("# Getting TPEX data failed!");
             }
         })
         .finally(function () {
             horseman.closeTab(0)
             horseman.close();
-            return exeResult;
+            var finalJsonData = {
+                data: jsondata,
+                paging: {
+                    twexLength: twexLength,
+                    tpexLength: tpexLength,
+                    totalCount: jsondata.length
+                }
+            }
+            jsonfile.writeFile(file, finalJsonData, function(err) {
+                if(err) console.error("write json data failed: " + err);
+            })
+            resolve("# Get Data Success!");
         })
 
 }
