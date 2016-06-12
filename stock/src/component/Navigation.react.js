@@ -15,7 +15,7 @@ var Navigation = React.createClass({
             <Navbar>
                 <Navbar.Header>
                     <Navbar.Brand>
-                        <a href="#"><Glyphicon glyph="flash" />{text.navBar.brand}</a>
+                        <a href="#"><Glyphicon glyph="flash" />{text.navBar.brand}<span style={{"verticalAlign": "super", "fontSize": "8pt"}}>{" beta"}</span></a>
                     </Navbar.Brand>
                     <Navbar.Toggle />
                 </Navbar.Header>

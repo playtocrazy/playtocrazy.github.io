@@ -86,7 +86,12 @@ webpackJsonp([0],{
 	                        'a',
 	                        { href: '#' },
 	                        React.createElement(Glyphicon, { glyph: 'flash' }),
-	                        text.navBar.brand
+	                        text.navBar.brand,
+	                        React.createElement(
+	                            'span',
+	                            { style: { "verticalAlign": "super", "fontSize": "8pt" } },
+	                            " beta"
+	                        )
 	                    )
 	                ),
 	                React.createElement(Navbar.Toggle, null)
