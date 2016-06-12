@@ -1,0 +1,20 @@
+{
+    "navBar": {
+        "brand": "氵中氵中氵中",
+        "rise": " 漲",
+        "fall": " 跌"
+    },
+    "row": {
+        "code": "股號",
+        "name": "股名",
+        "price": "成交價",
+        "change": "漲跌",
+        "rate": "漲跌幅",
+        "volumn": "成交量",
+        "lastPrice": "昨收",
+        "lastVolumn": "昨量",
+        "open": "開",
+        "high": "高",
+        "low": "低"
+    }
+}
