@@ -165,7 +165,7 @@ webpackJsonp([0],{
 
 	    render: function render() {
 	        var PanelModule = this.props.display.data.map(function (src, i) {
-	            var header = src.code + " " + src.name;
+	            var header = src.code + " " + src.name + " ▲ " + src.realtime.z + " / " + src.change + " / " + src.rate + " / " + src.realtime.v;
 	            return React.createElement(
 	                Panel,
 	                { header: header, eventKey: '1' },
