@@ -18,7 +18,6 @@ var robot = new Promise(function(resolve, reject) {
         crawl(config.file, resolve, reject);
     }
 });
-
 robot.then(function(result) {
     console.log(result);
     complete(config);

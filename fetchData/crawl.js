@@ -21,7 +21,7 @@ var crawl = function (file, resolve, reject) {
             var twexJsonData = [];
             $('#tbl-containerx table thead tr').each(function(index, codeGroup) {
                 var code = $(codeGroup).find('td:nth-child(1)').text().trim();
-                if(code){
+                if(code && code.length <= 4){ // except ETF or other product
                     var name = $(codeGroup).find('td:nth-child(2)').text().trim();
                     var saleFirst = $(codeGroup).find('td:nth-child(3)').text().replace("&nbsp;", "").trim() == "Y"? false: true;
                     twexJsonData.push({
@@ -53,15 +53,17 @@ var crawl = function (file, resolve, reject) {
             var tpexJsonData = [];
             $('div#v_result_withnote table.rpt-table.dataTable tbody tr').each(function(index, codeGroup) {
                 var code = $(codeGroup).find('td:nth-child(1)').text().trim();
-                var name = $(codeGroup).find('td:nth-child(2)').text().trim();
-                var saleFirst = $(codeGroup).find('td:nth-child(3)').text().replace("&nbsp;", "").trim() == "＊"? false: true;
-                tpexJsonData.push({
-                    code: code,
-                    name: name,
-                    saleFirst: saleFirst,
-                    type: 1,
-                    ex: "otc"
-                });
+                if(code && code.length <= 4){ // except ETF or other product
+                    var name = $(codeGroup).find('td:nth-child(2)').text().trim();
+                    var saleFirst = $(codeGroup).find('td:nth-child(3)').text().replace("&nbsp;", "").trim() == "＊"? false: true;
+                    tpexJsonData.push({
+                        code: code,
+                        name: name,
+                        saleFirst: saleFirst,
+                        type: 1,
+                        ex: "otc"
+                    });
+                }
             })
             return tpexJsonData;
         })
