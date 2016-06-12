@@ -8,8 +8,13 @@ var NavDropdown = require('react-bootstrap').NavDropdown;
 var MenuItem = require('react-bootstrap').MenuItem;
 
 var text = require('./text/text.json');
+var GeneralAction = require('../action/GeneralAction');
+var GeneralStore = require('../store/GeneralStore');
 
 var Navigation = React.createClass({
+    handleSwitchNav: function (selectedKey) {
+        GeneralAction.switchNav(selectedKey);
+    },
     render: function() {
         return (
             <Navbar>
@@ -20,9 +25,9 @@ var Navigation = React.createClass({
                     <Navbar.Toggle />
                 </Navbar.Header>
                 <Navbar.Collapse>
-                    <Nav>
-                        <NavItem eventKey={1} href="#"><Glyphicon glyph="upload" />{text.navBar.rise}</NavItem>
-                        <NavItem eventKey={2} href="#"><Glyphicon glyph="download" />{text.navBar.fall}</NavItem>
+                    <Nav onSelect={this.handleSwitchNav}>
+                        <NavItem eventKey={0} href="#"><Glyphicon glyph="upload" />{text.navBar.rise}</NavItem>
+                        <NavItem eventKey={1} href="#"><Glyphicon glyph="download" />{text.navBar.fall}</NavItem>
                     </Nav>
                 </Navbar.Collapse>
             </Navbar>

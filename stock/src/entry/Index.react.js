@@ -7,11 +7,16 @@ var GeneralStore = require('../store/GeneralStore');
 var Navigation = require('../component/Navigation.react');
 var Content = require('../component/Content.react');
 
+var getState = function () {
+    return {
+        display: GeneralStore.getDisplay(),
+        navKey: GeneralStore.getNavKey()
+    };
+}
+
 var Index = React.createClass({
     getInitialState: function() {
-        return {
-            display: GeneralStore.getDisplay()
-        };
+        return getState();
     },
     componentWillMount: function() {
         GeneralAction.initial();
@@ -23,16 +28,14 @@ var Index = React.createClass({
         GeneralStore.removeChangeListener(this._onChange);
     },
     _onChange: function () {
-        this.setState({
-            display : GeneralStore.getDisplay()
-        });
+        this.setState(getState());
     },
     render: function() {
         console.log(this.state.display);
         return (
             <div>
                 <Navigation />
-                <Content display={this.state.display} />
+                <Content display={this.state.display} navKey={this.state.navKey} />
             </div>
         );
     }

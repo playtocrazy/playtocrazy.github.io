@@ -10,9 +10,17 @@ var Row = require('./Row.react');
 
 var Content = React.createClass({
     render: function() {
+        var self = this;
         var PanelModule = this.props.display.data.map(function (src, i) {
-            var header = src.code + " " + src.name + " ▲ " + src.realtime.z + " / " + src.change + " / " + src.rate + " / " + src.realtime.v;
-            return <Panel header={header} eventKey="1"><Row data={src} /></Panel>;
+            var symbol = self.props.navKey == 0? " ▲ ": " ▽ ";
+            var change = src.change > 0? "+" + src.change: src.change;
+            var rate = (src.rate > 0? "+" + src.rate: src.rate) + "%";
+            var header = src.code + " " + src.name + symbol + src.realtime.z + " / " + change + " / " + rate + " / " + src.realtime.v;
+            if(self.props.navKey == 0 && src.change > 0){
+                return <Panel header={header} eventKey={i} key={i} bsStyle="danger"><Row data={src} /></Panel>;
+            }else if(self.props.navKey == 1 && src.change < 0){
+                return <Panel header={header} eventKey={i} key={i} bsStyle="success"><Row data={src} /></Panel>;
+            }
         })
         return (
             <PanelGroup accordion>

@@ -31,8 +31,8 @@ var Row = React.createClass({
                 <tbody>
                     <tr>
                         <td>{realtime.z}</td>
-                        <td>{data.change}</td>
-                        <td>{data.rate}</td>
+                        <td>{data.change > 0? ("+" + data.change): data.change}</td>
+                        <td>{(data.rate > 0? ("+" + data.rate): data.rate) + "%"}</td>
                         <td>{realtime.v}</td>
                         <td>{realtime.y}</td>
                         <td>{data.lastVol}</td>

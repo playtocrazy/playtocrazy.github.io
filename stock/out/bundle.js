@@ -9,18 +9,23 @@ webpackJsonp([0],{
 	var PropTypes = React.PropTypes;
 	var ReactDOM = __webpack_require__(38);
 
-	var GeneralAction = __webpack_require__(450);
-	var GeneralStore = __webpack_require__(437);
-	var Navigation = __webpack_require__(168);
-	var Content = __webpack_require__(435);
+	var GeneralAction = __webpack_require__(168);
+	var GeneralStore = __webpack_require__(174);
+	var Navigation = __webpack_require__(177);
+	var Content = __webpack_require__(444);
+
+	var getState = function getState() {
+	    return {
+	        display: GeneralStore.getDisplay(),
+	        navKey: GeneralStore.getNavKey()
+	    };
+	};
 
 	var Index = React.createClass({
 	    displayName: 'Index',
 
 	    getInitialState: function getInitialState() {
-	        return {
-	            display: GeneralStore.getDisplay()
-	        };
+	        return getState();
 	    },
 	    componentWillMount: function componentWillMount() {
 	        GeneralAction.initial();
@@ -32,9 +37,7 @@ webpackJsonp([0],{
 	        GeneralStore.removeChangeListener(this._onChange);
 	    },
 	    _onChange: function _onChange() {
-	        this.setState({
-	            display: GeneralStore.getDisplay()
-	        });
+	        this.setState(getState());
 	    },
 	    render: function render() {
 	        console.log(this.state.display);
@@ -42,7 +45,7 @@ webpackJsonp([0],{
 	            'div',
 	            null,
 	            React.createElement(Navigation, null),
-	            React.createElement(Content, { display: this.state.display })
+	            React.createElement(Content, { display: this.state.display, navKey: this.state.navKey })
 	        );
 	    }
 
@@ -58,288 +61,384 @@ webpackJsonp([0],{
 
 	'use strict';
 
-	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
-	var Navbar = __webpack_require__(169).Navbar;
-	var Glyphicon = __webpack_require__(169).Glyphicon;
-	var Nav = __webpack_require__(169).Nav;
-	var NavItem = __webpack_require__(169).NavItem;
-	var NavDropdown = __webpack_require__(169).NavDropdown;
-	var MenuItem = __webpack_require__(169).MenuItem;
+	var AppDispatcher = __webpack_require__(169);
+	var GeneralConstants = __webpack_require__(173);
 
-	var text = __webpack_require__(434);
-
-	var Navigation = React.createClass({
-	    displayName: 'Navigation',
-
-	    render: function render() {
-	        return React.createElement(
-	            Navbar,
-	            null,
-	            React.createElement(
-	                Navbar.Header,
-	                null,
-	                React.createElement(
-	                    Navbar.Brand,
-	                    null,
-	                    React.createElement(
-	                        'a',
-	                        { href: '#' },
-	                        React.createElement(Glyphicon, { glyph: 'flash' }),
-	                        text.navBar.brand,
-	                        React.createElement(
-	                            'span',
-	                            { style: { "verticalAlign": "super", "fontSize": "8pt" } },
-	                            " beta"
-	                        )
-	                    )
-	                ),
-	                React.createElement(Navbar.Toggle, null)
-	            ),
-	            React.createElement(
-	                Navbar.Collapse,
-	                null,
-	                React.createElement(
-	                    Nav,
-	                    null,
-	                    React.createElement(
-	                        NavItem,
-	                        { eventKey: 1, href: '#' },
-	                        React.createElement(Glyphicon, { glyph: 'upload' }),
-	                        text.navBar.rise
-	                    ),
-	                    React.createElement(
-	                        NavItem,
-	                        { eventKey: 2, href: '#' },
-	                        React.createElement(Glyphicon, { glyph: 'download' }),
-	                        text.navBar.fall
-	                    )
-	                )
-	            )
-	        );
+	var GeneralAction = {
+	    initial: function initial() {
+	        AppDispatcher.dispatcher({
+	            actionType: GeneralConstants.INITIAL
+	        });
+	    },
+	    switchNav: function switchNav(key) {
+	        AppDispatcher.dispatcher({
+	            actionType: GeneralConstants.SWITCH_NAV,
+	            key: key
+	        });
 	    }
-	});
-
-	module.exports = Navigation;
-
-/***/ },
-
-/***/ 434:
-/***/ function(module, exports) {
-
-	module.exports = {
-		"navBar": {
-			"brand": "氵中氵中氵中",
-			"rise": " 漲",
-			"fall": " 跌"
-		},
-		"row": {
-			"code": "股號",
-			"name": "股名",
-			"price": "成交價",
-			"change": "漲跌",
-			"rate": "漲跌幅",
-			"volumn": "成交量",
-			"lastPrice": "昨收",
-			"lastVolumn": "昨量",
-			"open": "開",
-			"high": "高",
-			"low": "低"
-		}
 	};
 
+	module.exports = GeneralAction;
+
 /***/ },
 
-/***/ 435:
+/***/ 169:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
-
-	var Table = __webpack_require__(169).Table;
-	var Glyphicon = __webpack_require__(169).Glyphicon;
-	var PanelGroup = __webpack_require__(169).PanelGroup;
-	var Panel = __webpack_require__(169).Panel;
-
-	var Row = __webpack_require__(436);
-
-	var Content = React.createClass({
-	    displayName: 'Content',
-
-	    render: function render() {
-	        var PanelModule = this.props.display.data.map(function (src, i) {
-	            var header = src.code + " " + src.name + " ▲ " + src.realtime.z + " / " + src.change + " / " + src.rate + " / " + src.realtime.v;
-	            return React.createElement(
-	                Panel,
-	                { header: header, eventKey: '1' },
-	                React.createElement(Row, { data: src })
-	            );
-	        });
-	        return React.createElement(
-	            PanelGroup,
-	            { accordion: true },
-	            PanelModule
-	        );
-	    }
-	});
-
-	module.exports = Content;
-
-/***/ },
-
-/***/ 436:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
-	var Table = __webpack_require__(169).Table;
-
-	var text = __webpack_require__(434);
-
-	var Row = React.createClass({
-	    displayName: 'Row',
-
-	    componentDidMount: function componentDidMount() {
-	        $(".panel-body").css("padding", "0px");
-	        $(".table-responsive").css("margin-bottom", "0px");
-	        $(".table.table-striped.table-bordered.table-condensed").css("margin-bottom", "0px");
-	    },
-	    render: function render() {
-	        var data = this.props.data;
-	        var realtime = data.realtime;
-	        return React.createElement(
-	            Table,
-	            { striped: true, bordered: true, condensed: true, responsive: true },
-	            React.createElement(
-	                'thead',
-	                null,
-	                React.createElement(
-	                    'tr',
-	                    null,
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.price
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.change
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.rate
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.volumn
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.lastPrice
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.lastVolumn
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.open
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.high
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.low
-	                    )
-	                )
-	            ),
-	            React.createElement(
-	                'tbody',
-	                null,
-	                React.createElement(
-	                    'tr',
-	                    null,
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.z
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        data.change
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        data.rate
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.v
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.y
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        data.lastVol
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.o
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.h
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.l
-	                    )
-	                )
-	            )
-	        );
-	    }
-
-	});
-
-	module.exports = Row;
-
-/***/ },
-
-/***/ 437:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var EventEmitter = __webpack_require__(438).EventEmitter;
+	var Dispatcher = __webpack_require__(170).Dispatcher;
 	var assign = __webpack_require__(4);
-	var dateFormat = __webpack_require__(439);
 
-	var AppDispatcher = __webpack_require__(440);
-	var GeneralConstants = __webpack_require__(444);
+	var AppDispatcher = assign(new Dispatcher(), {
+	    dispatcher: function dispatcher(action) {
+	        this.dispatch({
+	            source: 'VIEW_ACTION',
+	            action: action
+	        });
+	    }
+	});
+
+	module.exports = AppDispatcher;
+
+/***/ },
+
+/***/ 170:
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Copyright (c) 2014-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 */
+
+	module.exports.Dispatcher = __webpack_require__(171);
+
+
+/***/ },
+
+/***/ 171:
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright (c) 2014-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule Dispatcher
+	 * 
+	 * @preventMunge
+	 */
+
+	'use strict';
+
+	exports.__esModule = true;
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var invariant = __webpack_require__(172);
+
+	var _prefix = 'ID_';
+
+	/**
+	 * Dispatcher is used to broadcast payloads to registered callbacks. This is
+	 * different from generic pub-sub systems in two ways:
+	 *
+	 *   1) Callbacks are not subscribed to particular events. Every payload is
+	 *      dispatched to every registered callback.
+	 *   2) Callbacks can be deferred in whole or part until other callbacks have
+	 *      been executed.
+	 *
+	 * For example, consider this hypothetical flight destination form, which
+	 * selects a default city when a country is selected:
+	 *
+	 *   var flightDispatcher = new Dispatcher();
+	 *
+	 *   // Keeps track of which country is selected
+	 *   var CountryStore = {country: null};
+	 *
+	 *   // Keeps track of which city is selected
+	 *   var CityStore = {city: null};
+	 *
+	 *   // Keeps track of the base flight price of the selected city
+	 *   var FlightPriceStore = {price: null}
+	 *
+	 * When a user changes the selected city, we dispatch the payload:
+	 *
+	 *   flightDispatcher.dispatch({
+	 *     actionType: 'city-update',
+	 *     selectedCity: 'paris'
+	 *   });
+	 *
+	 * This payload is digested by `CityStore`:
+	 *
+	 *   flightDispatcher.register(function(payload) {
+	 *     if (payload.actionType === 'city-update') {
+	 *       CityStore.city = payload.selectedCity;
+	 *     }
+	 *   });
+	 *
+	 * When the user selects a country, we dispatch the payload:
+	 *
+	 *   flightDispatcher.dispatch({
+	 *     actionType: 'country-update',
+	 *     selectedCountry: 'australia'
+	 *   });
+	 *
+	 * This payload is digested by both stores:
+	 *
+	 *   CountryStore.dispatchToken = flightDispatcher.register(function(payload) {
+	 *     if (payload.actionType === 'country-update') {
+	 *       CountryStore.country = payload.selectedCountry;
+	 *     }
+	 *   });
+	 *
+	 * When the callback to update `CountryStore` is registered, we save a reference
+	 * to the returned token. Using this token with `waitFor()`, we can guarantee
+	 * that `CountryStore` is updated before the callback that updates `CityStore`
+	 * needs to query its data.
+	 *
+	 *   CityStore.dispatchToken = flightDispatcher.register(function(payload) {
+	 *     if (payload.actionType === 'country-update') {
+	 *       // `CountryStore.country` may not be updated.
+	 *       flightDispatcher.waitFor([CountryStore.dispatchToken]);
+	 *       // `CountryStore.country` is now guaranteed to be updated.
+	 *
+	 *       // Select the default city for the new country
+	 *       CityStore.city = getDefaultCityForCountry(CountryStore.country);
+	 *     }
+	 *   });
+	 *
+	 * The usage of `waitFor()` can be chained, for example:
+	 *
+	 *   FlightPriceStore.dispatchToken =
+	 *     flightDispatcher.register(function(payload) {
+	 *       switch (payload.actionType) {
+	 *         case 'country-update':
+	 *         case 'city-update':
+	 *           flightDispatcher.waitFor([CityStore.dispatchToken]);
+	 *           FlightPriceStore.price =
+	 *             getFlightPriceStore(CountryStore.country, CityStore.city);
+	 *           break;
+	 *     }
+	 *   });
+	 *
+	 * The `country-update` payload will be guaranteed to invoke the stores'
+	 * registered callbacks in order: `CountryStore`, `CityStore`, then
+	 * `FlightPriceStore`.
+	 */
+
+	var Dispatcher = (function () {
+	  function Dispatcher() {
+	    _classCallCheck(this, Dispatcher);
+
+	    this._callbacks = {};
+	    this._isDispatching = false;
+	    this._isHandled = {};
+	    this._isPending = {};
+	    this._lastID = 1;
+	  }
+
+	  /**
+	   * Registers a callback to be invoked with every dispatched payload. Returns
+	   * a token that can be used with `waitFor()`.
+	   */
+
+	  Dispatcher.prototype.register = function register(callback) {
+	    var id = _prefix + this._lastID++;
+	    this._callbacks[id] = callback;
+	    return id;
+	  };
+
+	  /**
+	   * Removes a callback based on its token.
+	   */
+
+	  Dispatcher.prototype.unregister = function unregister(id) {
+	    !this._callbacks[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.unregister(...): `%s` does not map to a registered callback.', id) : invariant(false) : undefined;
+	    delete this._callbacks[id];
+	  };
+
+	  /**
+	   * Waits for the callbacks specified to be invoked before continuing execution
+	   * of the current callback. This method should only be used by a callback in
+	   * response to a dispatched payload.
+	   */
+
+	  Dispatcher.prototype.waitFor = function waitFor(ids) {
+	    !this._isDispatching ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): Must be invoked while dispatching.') : invariant(false) : undefined;
+	    for (var ii = 0; ii < ids.length; ii++) {
+	      var id = ids[ii];
+	      if (this._isPending[id]) {
+	        !this._isHandled[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): Circular dependency detected while ' + 'waiting for `%s`.', id) : invariant(false) : undefined;
+	        continue;
+	      }
+	      !this._callbacks[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): `%s` does not map to a registered callback.', id) : invariant(false) : undefined;
+	      this._invokeCallback(id);
+	    }
+	  };
+
+	  /**
+	   * Dispatches a payload to all registered callbacks.
+	   */
+
+	  Dispatcher.prototype.dispatch = function dispatch(payload) {
+	    !!this._isDispatching ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatch.dispatch(...): Cannot dispatch in the middle of a dispatch.') : invariant(false) : undefined;
+	    this._startDispatching(payload);
+	    try {
+	      for (var id in this._callbacks) {
+	        if (this._isPending[id]) {
+	          continue;
+	        }
+	        this._invokeCallback(id);
+	      }
+	    } finally {
+	      this._stopDispatching();
+	    }
+	  };
+
+	  /**
+	   * Is this Dispatcher currently dispatching.
+	   */
+
+	  Dispatcher.prototype.isDispatching = function isDispatching() {
+	    return this._isDispatching;
+	  };
+
+	  /**
+	   * Call the callback stored with the given id. Also do some internal
+	   * bookkeeping.
+	   *
+	   * @internal
+	   */
+
+	  Dispatcher.prototype._invokeCallback = function _invokeCallback(id) {
+	    this._isPending[id] = true;
+	    this._callbacks[id](this._pendingPayload);
+	    this._isHandled[id] = true;
+	  };
+
+	  /**
+	   * Set up bookkeeping needed when dispatching.
+	   *
+	   * @internal
+	   */
+
+	  Dispatcher.prototype._startDispatching = function _startDispatching(payload) {
+	    for (var id in this._callbacks) {
+	      this._isPending[id] = false;
+	      this._isHandled[id] = false;
+	    }
+	    this._pendingPayload = payload;
+	    this._isDispatching = true;
+	  };
+
+	  /**
+	   * Clear bookkeeping used for dispatching.
+	   *
+	   * @internal
+	   */
+
+	  Dispatcher.prototype._stopDispatching = function _stopDispatching() {
+	    delete this._pendingPayload;
+	    this._isDispatching = false;
+	  };
+
+	  return Dispatcher;
+	})();
+
+	module.exports = Dispatcher;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+
+/***/ 172:
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * Copyright 2013-2015, Facebook, Inc.
+	 * All rights reserved.
+	 *
+	 * This source code is licensed under the BSD-style license found in the
+	 * LICENSE file in the root directory of this source tree. An additional grant
+	 * of patent rights can be found in the PATENTS file in the same directory.
+	 *
+	 * @providesModule invariant
+	 */
+
+	"use strict";
+
+	/**
+	 * Use invariant() to assert state which your program assumes to be true.
+	 *
+	 * Provide sprintf-style format (only %s is supported) and arguments
+	 * to provide information about what broke and what you were
+	 * expecting.
+	 *
+	 * The invariant message will be stripped in production, but the invariant
+	 * will remain to ensure logic does not differ in production.
+	 */
+
+	var invariant = function (condition, format, a, b, c, d, e, f) {
+	  if (process.env.NODE_ENV !== 'production') {
+	    if (format === undefined) {
+	      throw new Error('invariant requires an error message argument');
+	    }
+	  }
+
+	  if (!condition) {
+	    var error;
+	    if (format === undefined) {
+	      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
+	    } else {
+	      var args = [a, b, c, d, e, f];
+	      var argIndex = 0;
+	      error = new Error('Invariant Violation: ' + format.replace(/%s/g, function () {
+	        return args[argIndex++];
+	      }));
+	    }
+
+	    error.framesToPop = 1; // we don't care about invariant's own frame
+	    throw error;
+	  }
+	};
+
+	module.exports = invariant;
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+
+/***/ },
+
+/***/ 173:
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var GeneralConstants = {
+	    INITIAL: "INITIAL",
+	    SWITCH_NAV: "SWITCH_NAV"
+	};
+
+	module.exports = GeneralConstants;
+
+/***/ },
+
+/***/ 174:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var EventEmitter = __webpack_require__(175).EventEmitter;
+	var assign = __webpack_require__(4);
+	var dateFormat = __webpack_require__(176);
+
+	var AppDispatcher = __webpack_require__(169);
+	var GeneralConstants = __webpack_require__(173);
 	var CHANGE_EVENT = 'change';
 
 	var now = new Date();
@@ -378,12 +477,16 @@ webpackJsonp([0],{
 	    background: {
 	        base: {},
 	        base500: {}
-	    }
+	    },
+	    navKey: 0
 	};
 
 	var GeneralStore = assign({}, EventEmitter.prototype, {
 	    getDisplay: function getDisplay() {
 	        return _data.display;
+	    },
+	    getNavKey: function getNavKey() {
+	        return _data.navKey;
 	    },
 	    emitChange: function emitChange() {
 	        this.emit(CHANGE_EVENT);
@@ -402,6 +505,10 @@ webpackJsonp([0],{
 	                fetchData();
 	                GeneralStore.emitChange();
 	                break;
+	            case GeneralConstants.SWITCH_NAV:
+	                _data.navKey = action.key;
+	                GeneralStore.emitChange();
+	                break;
 	        }
 	        return true;
 	    })
@@ -414,7 +521,7 @@ webpackJsonp([0],{
 	};
 
 	var fetchData = function fetchData() {
-	    var sample = {
+	    var samples = [{
 	        "code": "3293",
 	        "ex": "otc",
 	        "name": "鈊象",
@@ -461,19 +568,68 @@ webpackJsonp([0],{
 	            "y": "288.00",
 	            "ps": "138"
 	        }
-	    };
-	    var change = Number(sample.realtime.z.trim()) - Number(sample.realtime.y.trim());
-	    var rate = (change / Number(sample.realtime.y.trim()) * 100).toFixed(2);
-	    sample.change = (change > 0 ? "+" : "") + change;
-	    sample.rate = (rate > 0 ? "+" : "") + rate + "%";
-	    _data.display.data.push(sample);
+	    }, {
+	        "code": "3293",
+	        "ex": "otc",
+	        "name": "鈊象",
+	        "saleFirst": true,
+	        "type": 1,
+	        "lastVol": 961,
+	        "realtime": {
+	            "ts": "0",
+	            "fv": "2",
+	            "tk0": "3293.tw_otc_20160608_B_9999733323",
+	            "tk1": "3293.tw_otc_20160608_B_9999722518",
+	            "oa": "292.50",
+	            "ob": "290.50",
+	            "tlong": "1465367400000",
+	            "ot": "14:30:00",
+	            "f": "3_17_9_43_10_",
+	            "ex": "otc",
+	            "g": "9_8_4_10_7_",
+	            "ov": "1410",
+	            "d": "20160608",
+	            "it": "12",
+	            "b": "290.00_289.00_288.50_288.00_287.50_",
+	            "c": "3293",
+	            "mt": "000000",
+	            "a": "290.50_291.00_291.50_292.00_292.50_",
+	            "n": "鈊象",
+	            "o": "292.50",
+	            "l": "286.00",
+	            "oz": "290.50",
+	            "h": "292.50",
+	            "ip": "0",
+	            "i": "32",
+	            "w": "259.50",
+	            "v": "959",
+	            "u": "316.50",
+	            "t": "13:30:00",
+	            "s": "139",
+	            "pz": "290.50",
+	            "tv": "139",
+	            "p": "0",
+	            "nf": "鈊象電子股份有限公司",
+	            "ch": "3293.tw",
+	            "z": "279.50",
+	            "y": "288.00",
+	            "ps": "138"
+	        }
+	    }];
+	    $.each(samples, function (i, sample) {
+	        var change = Number(sample.realtime.z.trim()) - Number(sample.realtime.y.trim());
+	        var rate = Number((change / Number(sample.realtime.y.trim()) * 100).toFixed(2));
+	        sample.change = change;
+	        sample.rate = rate;
+	        _data.display.data.push(sample);
+	    });
 	};
 
 	module.exports = GeneralStore;
 
 /***/ },
 
-/***/ 438:
+/***/ 175:
 /***/ function(module, exports) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -778,7 +934,7 @@ webpackJsonp([0],{
 
 /***/ },
 
-/***/ 439:
+/***/ 176:
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/*
@@ -1011,368 +1167,296 @@ webpackJsonp([0],{
 
 /***/ },
 
-/***/ 440:
+/***/ 177:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Dispatcher = __webpack_require__(441).Dispatcher;
-	var assign = __webpack_require__(4);
+	var React = __webpack_require__(1);
+	var PropTypes = React.PropTypes;
+	var Navbar = __webpack_require__(178).Navbar;
+	var Glyphicon = __webpack_require__(178).Glyphicon;
+	var Nav = __webpack_require__(178).Nav;
+	var NavItem = __webpack_require__(178).NavItem;
+	var NavDropdown = __webpack_require__(178).NavDropdown;
+	var MenuItem = __webpack_require__(178).MenuItem;
 
-	var AppDispatcher = assign(new Dispatcher(), {
-	    dispatcher: function dispatcher(action) {
-	        this.dispatch({
-	            source: 'VIEW_ACTION',
-	            action: action
-	        });
+	var text = __webpack_require__(443);
+	var GeneralAction = __webpack_require__(168);
+	var GeneralStore = __webpack_require__(174);
+
+	var Navigation = React.createClass({
+	    displayName: 'Navigation',
+
+	    handleSwitchNav: function handleSwitchNav(selectedKey) {
+	        GeneralAction.switchNav(selectedKey);
+	    },
+	    render: function render() {
+	        return React.createElement(
+	            Navbar,
+	            null,
+	            React.createElement(
+	                Navbar.Header,
+	                null,
+	                React.createElement(
+	                    Navbar.Brand,
+	                    null,
+	                    React.createElement(
+	                        'a',
+	                        { href: '#' },
+	                        React.createElement(Glyphicon, { glyph: 'flash' }),
+	                        text.navBar.brand,
+	                        React.createElement(
+	                            'span',
+	                            { style: { "verticalAlign": "super", "fontSize": "8pt" } },
+	                            " beta"
+	                        )
+	                    )
+	                ),
+	                React.createElement(Navbar.Toggle, null)
+	            ),
+	            React.createElement(
+	                Navbar.Collapse,
+	                null,
+	                React.createElement(
+	                    Nav,
+	                    { onSelect: this.handleSwitchNav },
+	                    React.createElement(
+	                        NavItem,
+	                        { eventKey: 0, href: '#' },
+	                        React.createElement(Glyphicon, { glyph: 'upload' }),
+	                        text.navBar.rise
+	                    ),
+	                    React.createElement(
+	                        NavItem,
+	                        { eventKey: 1, href: '#' },
+	                        React.createElement(Glyphicon, { glyph: 'download' }),
+	                        text.navBar.fall
+	                    )
+	                )
+	            )
+	        );
 	    }
 	});
 
-	module.exports = AppDispatcher;
-
-/***/ },
-
-/***/ 441:
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Copyright (c) 2014-2015, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 */
-
-	module.exports.Dispatcher = __webpack_require__(442);
-
-
-/***/ },
-
-/***/ 442:
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * Copyright (c) 2014-2015, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * @providesModule Dispatcher
-	 * 
-	 * @preventMunge
-	 */
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-	var invariant = __webpack_require__(443);
-
-	var _prefix = 'ID_';
-
-	/**
-	 * Dispatcher is used to broadcast payloads to registered callbacks. This is
-	 * different from generic pub-sub systems in two ways:
-	 *
-	 *   1) Callbacks are not subscribed to particular events. Every payload is
-	 *      dispatched to every registered callback.
-	 *   2) Callbacks can be deferred in whole or part until other callbacks have
-	 *      been executed.
-	 *
-	 * For example, consider this hypothetical flight destination form, which
-	 * selects a default city when a country is selected:
-	 *
-	 *   var flightDispatcher = new Dispatcher();
-	 *
-	 *   // Keeps track of which country is selected
-	 *   var CountryStore = {country: null};
-	 *
-	 *   // Keeps track of which city is selected
-	 *   var CityStore = {city: null};
-	 *
-	 *   // Keeps track of the base flight price of the selected city
-	 *   var FlightPriceStore = {price: null}
-	 *
-	 * When a user changes the selected city, we dispatch the payload:
-	 *
-	 *   flightDispatcher.dispatch({
-	 *     actionType: 'city-update',
-	 *     selectedCity: 'paris'
-	 *   });
-	 *
-	 * This payload is digested by `CityStore`:
-	 *
-	 *   flightDispatcher.register(function(payload) {
-	 *     if (payload.actionType === 'city-update') {
-	 *       CityStore.city = payload.selectedCity;
-	 *     }
-	 *   });
-	 *
-	 * When the user selects a country, we dispatch the payload:
-	 *
-	 *   flightDispatcher.dispatch({
-	 *     actionType: 'country-update',
-	 *     selectedCountry: 'australia'
-	 *   });
-	 *
-	 * This payload is digested by both stores:
-	 *
-	 *   CountryStore.dispatchToken = flightDispatcher.register(function(payload) {
-	 *     if (payload.actionType === 'country-update') {
-	 *       CountryStore.country = payload.selectedCountry;
-	 *     }
-	 *   });
-	 *
-	 * When the callback to update `CountryStore` is registered, we save a reference
-	 * to the returned token. Using this token with `waitFor()`, we can guarantee
-	 * that `CountryStore` is updated before the callback that updates `CityStore`
-	 * needs to query its data.
-	 *
-	 *   CityStore.dispatchToken = flightDispatcher.register(function(payload) {
-	 *     if (payload.actionType === 'country-update') {
-	 *       // `CountryStore.country` may not be updated.
-	 *       flightDispatcher.waitFor([CountryStore.dispatchToken]);
-	 *       // `CountryStore.country` is now guaranteed to be updated.
-	 *
-	 *       // Select the default city for the new country
-	 *       CityStore.city = getDefaultCityForCountry(CountryStore.country);
-	 *     }
-	 *   });
-	 *
-	 * The usage of `waitFor()` can be chained, for example:
-	 *
-	 *   FlightPriceStore.dispatchToken =
-	 *     flightDispatcher.register(function(payload) {
-	 *       switch (payload.actionType) {
-	 *         case 'country-update':
-	 *         case 'city-update':
-	 *           flightDispatcher.waitFor([CityStore.dispatchToken]);
-	 *           FlightPriceStore.price =
-	 *             getFlightPriceStore(CountryStore.country, CityStore.city);
-	 *           break;
-	 *     }
-	 *   });
-	 *
-	 * The `country-update` payload will be guaranteed to invoke the stores'
-	 * registered callbacks in order: `CountryStore`, `CityStore`, then
-	 * `FlightPriceStore`.
-	 */
-
-	var Dispatcher = (function () {
-	  function Dispatcher() {
-	    _classCallCheck(this, Dispatcher);
-
-	    this._callbacks = {};
-	    this._isDispatching = false;
-	    this._isHandled = {};
-	    this._isPending = {};
-	    this._lastID = 1;
-	  }
-
-	  /**
-	   * Registers a callback to be invoked with every dispatched payload. Returns
-	   * a token that can be used with `waitFor()`.
-	   */
-
-	  Dispatcher.prototype.register = function register(callback) {
-	    var id = _prefix + this._lastID++;
-	    this._callbacks[id] = callback;
-	    return id;
-	  };
-
-	  /**
-	   * Removes a callback based on its token.
-	   */
-
-	  Dispatcher.prototype.unregister = function unregister(id) {
-	    !this._callbacks[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.unregister(...): `%s` does not map to a registered callback.', id) : invariant(false) : undefined;
-	    delete this._callbacks[id];
-	  };
-
-	  /**
-	   * Waits for the callbacks specified to be invoked before continuing execution
-	   * of the current callback. This method should only be used by a callback in
-	   * response to a dispatched payload.
-	   */
-
-	  Dispatcher.prototype.waitFor = function waitFor(ids) {
-	    !this._isDispatching ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): Must be invoked while dispatching.') : invariant(false) : undefined;
-	    for (var ii = 0; ii < ids.length; ii++) {
-	      var id = ids[ii];
-	      if (this._isPending[id]) {
-	        !this._isHandled[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): Circular dependency detected while ' + 'waiting for `%s`.', id) : invariant(false) : undefined;
-	        continue;
-	      }
-	      !this._callbacks[id] ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatcher.waitFor(...): `%s` does not map to a registered callback.', id) : invariant(false) : undefined;
-	      this._invokeCallback(id);
-	    }
-	  };
-
-	  /**
-	   * Dispatches a payload to all registered callbacks.
-	   */
-
-	  Dispatcher.prototype.dispatch = function dispatch(payload) {
-	    !!this._isDispatching ? process.env.NODE_ENV !== 'production' ? invariant(false, 'Dispatch.dispatch(...): Cannot dispatch in the middle of a dispatch.') : invariant(false) : undefined;
-	    this._startDispatching(payload);
-	    try {
-	      for (var id in this._callbacks) {
-	        if (this._isPending[id]) {
-	          continue;
-	        }
-	        this._invokeCallback(id);
-	      }
-	    } finally {
-	      this._stopDispatching();
-	    }
-	  };
-
-	  /**
-	   * Is this Dispatcher currently dispatching.
-	   */
-
-	  Dispatcher.prototype.isDispatching = function isDispatching() {
-	    return this._isDispatching;
-	  };
-
-	  /**
-	   * Call the callback stored with the given id. Also do some internal
-	   * bookkeeping.
-	   *
-	   * @internal
-	   */
-
-	  Dispatcher.prototype._invokeCallback = function _invokeCallback(id) {
-	    this._isPending[id] = true;
-	    this._callbacks[id](this._pendingPayload);
-	    this._isHandled[id] = true;
-	  };
-
-	  /**
-	   * Set up bookkeeping needed when dispatching.
-	   *
-	   * @internal
-	   */
-
-	  Dispatcher.prototype._startDispatching = function _startDispatching(payload) {
-	    for (var id in this._callbacks) {
-	      this._isPending[id] = false;
-	      this._isHandled[id] = false;
-	    }
-	    this._pendingPayload = payload;
-	    this._isDispatching = true;
-	  };
-
-	  /**
-	   * Clear bookkeeping used for dispatching.
-	   *
-	   * @internal
-	   */
-
-	  Dispatcher.prototype._stopDispatching = function _stopDispatching() {
-	    delete this._pendingPayload;
-	    this._isDispatching = false;
-	  };
-
-	  return Dispatcher;
-	})();
-
-	module.exports = Dispatcher;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
+	module.exports = Navigation;
 
 /***/ },
 
 /***/ 443:
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * Copyright 2013-2015, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 *
-	 * @providesModule invariant
-	 */
-
-	"use strict";
-
-	/**
-	 * Use invariant() to assert state which your program assumes to be true.
-	 *
-	 * Provide sprintf-style format (only %s is supported) and arguments
-	 * to provide information about what broke and what you were
-	 * expecting.
-	 *
-	 * The invariant message will be stripped in production, but the invariant
-	 * will remain to ensure logic does not differ in production.
-	 */
-
-	var invariant = function (condition, format, a, b, c, d, e, f) {
-	  if (process.env.NODE_ENV !== 'production') {
-	    if (format === undefined) {
-	      throw new Error('invariant requires an error message argument');
-	    }
-	  }
-
-	  if (!condition) {
-	    var error;
-	    if (format === undefined) {
-	      error = new Error('Minified exception occurred; use the non-minified dev environment ' + 'for the full error message and additional helpful warnings.');
-	    } else {
-	      var args = [a, b, c, d, e, f];
-	      var argIndex = 0;
-	      error = new Error('Invariant Violation: ' + format.replace(/%s/g, function () {
-	        return args[argIndex++];
-	      }));
-	    }
-
-	    error.framesToPop = 1; // we don't care about invariant's own frame
-	    throw error;
-	  }
+	module.exports = {
+		"navBar": {
+			"brand": "氵中氵中氵中",
+			"rise": " 漲",
+			"fall": " 跌"
+		},
+		"row": {
+			"code": "股號",
+			"name": "股名",
+			"price": "成交價",
+			"change": "漲跌",
+			"rate": "漲跌幅",
+			"volumn": "成交量",
+			"lastPrice": "昨收",
+			"lastVolumn": "昨量",
+			"open": "開",
+			"high": "高",
+			"low": "低"
+		}
 	};
-
-	module.exports = invariant;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)))
 
 /***/ },
 
 /***/ 444:
-/***/ function(module, exports) {
-
-	"use strict";
-
-	var GeneralConstants = {
-	    INITIAL: "INITIAL"
-	};
-
-	module.exports = GeneralConstants;
-
-/***/ },
-
-/***/ 450:
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var AppDispatcher = __webpack_require__(440);
-	var GeneralConstants = __webpack_require__(444);
+	var React = __webpack_require__(1);
+	var PropTypes = React.PropTypes;
 
-	var GeneralAction = {
-	    initial: function initial() {
-	        AppDispatcher.dispatcher({
-	            actionType: GeneralConstants.INITIAL
+	var Table = __webpack_require__(178).Table;
+	var Glyphicon = __webpack_require__(178).Glyphicon;
+	var PanelGroup = __webpack_require__(178).PanelGroup;
+	var Panel = __webpack_require__(178).Panel;
+
+	var Row = __webpack_require__(445);
+
+	var Content = React.createClass({
+	    displayName: 'Content',
+
+	    render: function render() {
+	        var self = this;
+	        var PanelModule = this.props.display.data.map(function (src, i) {
+	            var symbol = self.props.navKey == 0 ? " ▲ " : " ▽ ";
+	            var change = src.change > 0 ? "+" + src.change : src.change;
+	            var rate = (src.rate > 0 ? "+" + src.rate : src.rate) + "%";
+	            var header = src.code + " " + src.name + symbol + src.realtime.z + " / " + change + " / " + rate + " / " + src.realtime.v;
+	            if (self.props.navKey == 0 && src.change > 0) {
+	                return React.createElement(
+	                    Panel,
+	                    { header: header, eventKey: i, key: i, bsStyle: 'danger' },
+	                    React.createElement(Row, { data: src })
+	                );
+	            } else if (self.props.navKey == 1 && src.change < 0) {
+	                return React.createElement(
+	                    Panel,
+	                    { header: header, eventKey: i, key: i, bsStyle: 'success' },
+	                    React.createElement(Row, { data: src })
+	                );
+	            }
 	        });
+	        return React.createElement(
+	            PanelGroup,
+	            { accordion: true },
+	            PanelModule
+	        );
 	    }
-	};
+	});
 
-	module.exports = GeneralAction;
+	module.exports = Content;
+
+/***/ },
+
+/***/ 445:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var React = __webpack_require__(1);
+	var PropTypes = React.PropTypes;
+	var Table = __webpack_require__(178).Table;
+
+	var text = __webpack_require__(443);
+
+	var Row = React.createClass({
+	    displayName: 'Row',
+
+	    componentDidMount: function componentDidMount() {
+	        $(".panel-body").css("padding", "0px");
+	        $(".table-responsive").css("margin-bottom", "0px");
+	        $(".table.table-striped.table-bordered.table-condensed").css("margin-bottom", "0px");
+	    },
+	    render: function render() {
+	        var data = this.props.data;
+	        var realtime = data.realtime;
+	        return React.createElement(
+	            Table,
+	            { striped: true, bordered: true, condensed: true, responsive: true },
+	            React.createElement(
+	                'thead',
+	                null,
+	                React.createElement(
+	                    'tr',
+	                    null,
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.price
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.change
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.rate
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.volumn
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.lastPrice
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.lastVolumn
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.open
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.high
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.low
+	                    )
+	                )
+	            ),
+	            React.createElement(
+	                'tbody',
+	                null,
+	                React.createElement(
+	                    'tr',
+	                    null,
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.z
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        data.change > 0 ? "+" + data.change : data.change
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        (data.rate > 0 ? "+" + data.rate : data.rate) + "%"
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.v
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.y
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        data.lastVol
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.o
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.h
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.l
+	                    )
+	                )
+	            )
+	        );
+	    }
+
+	});
+
+	module.exports = Row;
 
 /***/ }
 

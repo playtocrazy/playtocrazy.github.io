@@ -6,6 +6,12 @@ var GeneralAction = {
         AppDispatcher.dispatcher({
             actionType: GeneralConstants.INITIAL
         });
+    },
+    switchNav: function (key) {
+        AppDispatcher.dispatcher({
+            actionType: GeneralConstants.SWITCH_NAV,
+            key: key
+        });
     }
 };
 

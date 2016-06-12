@@ -1,5 +1,6 @@
 var GeneralConstants = {
-    INITIAL: "INITIAL"
+    INITIAL: "INITIAL",
+    SWITCH_NAV: "SWITCH_NAV"
 }
 
 module.exports = GeneralConstants;
