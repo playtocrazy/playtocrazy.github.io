@@ -104,7 +104,7 @@ var isTradingTime = function (workday) {
 var initial = function() {
     now.setDate(now.getDate()-1);
     // var fileUrl = "../../data/" + dateFormat(now, "yyyymmdd") + "_base.json";
-    var fileUrl1 = "../../data/20160611_base_500.json";
+    var fileUrl1 = "../data/20160611_base_500.json";
     fetch(fileUrl1)
         .then(function(response) {
             return response.json();
