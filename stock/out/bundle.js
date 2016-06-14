@@ -11,8 +11,8 @@ webpackJsonp([0],{
 
 	var GeneralAction = __webpack_require__(168);
 	var GeneralStore = __webpack_require__(174);
-	var Navigation = __webpack_require__(178);
-	var Content = __webpack_require__(445);
+	var Navigation = __webpack_require__(175);
+	var Content = __webpack_require__(442);
 
 	var getState = function getState() {
 	    return {
@@ -41,13 +41,13 @@ webpackJsonp([0],{
 	    },
 	    render: function render() {
 	        console.log(this.state.display);
-	        // return (
-	        //     <div>
-	        //         <Navigation />
-	        //         <Content display={this.state.display} navKey={this.state.navKey} />
-	        //     </div>
-	        // );
-	        return null;
+	        return React.createElement(
+	            'div',
+	            null,
+	            React.createElement(Navigation, null),
+	            React.createElement(Content, { display: this.state.display, navKey: this.state.navKey })
+	        );
+	        // return null;
 	    }
 
 	});
@@ -423,14 +423,18 @@ webpackJsonp([0],{
 
 	/* WEBPACK VAR INJECTION */(function(fetch) {'use strict';
 
-	var EventEmitter = __webpack_require__(175).EventEmitter;
+	var EventEmitter = __webpack_require__(445).EventEmitter;
 	var assign = __webpack_require__(4);
-	var dateFormat = __webpack_require__(176);
-	__webpack_require__(177);
+	var dateFormat = __webpack_require__(446);
+	var Cookies = __webpack_require__(448);
+	__webpack_require__(447);
 
 	var AppDispatcher = __webpack_require__(169);
 	var GeneralConstants = __webpack_require__(173);
 	var CHANGE_EVENT = 'change';
+
+	var now = new Date();
+	var today = dateFormat(now, "yyyyMMdd");
 
 	/*
 	display: {
@@ -455,14 +459,23 @@ webpackJsonp([0],{
 	        data: [],
 	        paging: {
 	            limit: 0,
-	            page: 0,
-	            totalPage: 0,
-	            totalCount: 0
+	            page: 1,
+	            totalPage: 1,
+	            totalCount: 0,
+	            tempCount: 0
+	        },
+	        filter: {
+	            volMultiple: 0.33,
+	            lastVol: 500
 	        }
 	    },
 	    background: {
 	        base: {},
-	        base500: {}
+	        base500: {},
+	        requestStockCode: [],
+	        filter: {
+	            risePercentage: 0.3
+	        }
 	    },
 	    navKey: 0
 	};
@@ -514,22 +527,14 @@ webpackJsonp([0],{
 
 	// load base data
 	var initial = function initial() {
-	    var now = new Date();
 	    now.setDate(now.getDate() - 1);
 	    // var fileUrl = "../../data/" + dateFormat(now, "yyyymmdd") + "_base.json";
 	    var fileUrl1 = "../../data/20160611_base_500.json";
-	    var fileUrl2 = "../../data/20160611_base.json";
 	    fetch(fileUrl1).then(function (response) {
 	        return response.json();
 	    }).then(function (json) {
 	        _data.background.base500 = json;
-	        fetch(fileUrl2).then(function (response) {
-	            return response.json();
-	        }).then(function (json) {
-	            _data.background.base = json;
-	        }).catch(function (ex) {
-	            console.log('parsing failed', ex);
-	        });
+	        genRequestStockCodeService();
 	    }).catch(function (ex) {
 	        console.log('parsing failed', ex);
 	    });
@@ -640,601 +645,431 @@ webpackJsonp([0],{
 	    });
 	};
 
-	var filterService = function filterService(realtime_all) {
-	    _data.background.base500.data.forEach(function (base, i) {
-	        var realtime = realtime_all.msgArray.find(function (stock, j) {
-	            return stock.c === base.code;
+	var genRequestStockCodeService = function genRequestStockCodeService() {
+	    var url = cookieService.get();
+	    if (url) {
+	        fetch(url).then(function (response) {
+	            return response.json();
+	        }).then(function (json) {
+	            _data.background.requestStockCode = json;
+	        }).catch(function (ex) {
+	            console.log('parsing failed', ex);
 	        });
-	        base.realtime = realtime;
-	        _data.display.data.push(base);
+	        console.log(_data.background.requestStockCode);
+	    } else {
+	        _data.background.base500.data.forEach(function (base, i) {
+	            _data.background.requestStockCode.push(base.code);
+	        });
+	        cookieService.clear();
+	        textUploaderService(_data.background.requestStockCode);
+	    }
+	};
+
+	var updateService = function updateService(realtime_all) {
+	    realtime_all.msgArray.forEach(function (realtime, i) {
+	        var stock = _data.background.base500.data.find(function (_base, j) {
+	            return realtime.c === _base.code;
+	        });
+	        stock.realtime = realtime;
+	        if (filterService(stock)) {
+	            _data.display.data.push(stock);
+	            pagingService();
+	        }
 	    });
 	};
 
-	/*
-	var abcd1 = [
-	    {t: "a"},
-	    {t: "b"},
-	    {t: "c"},
-	    {t: "d"}
-	];
+	var filterService = function filterService(stock) {
+	    var result = false;
+	    if (Number(stock.realtime.v) >= parseInt(stock.lastVol * _data.display.filter.volMultiple)) {
+	        result = true;
+	    } else {
+	        result = false;
+	    }
+	    if (stock.lastVol >= _data.display.filter.lastVol) {
+	        result = true;
+	    } else {
+	        result = false;
+	    }
+	    return result;
+	};
 
-	var abcd2 = [
-	    {t: "a", tab: "aaa"},
-	    {t: "b", tab: "bbb"},
-	    {t: "c", tab: "ccc"},
-	    {t: "d", tab: "ddd"}
-	];
+	var pagingService = function pagingService() {
+	    _data.display.paging.totalCount++;
+	    _data.display.paging.tempCount++;
+	    if (_data.display.paging.tempCount > _data.display.paging.limit) {
+	        _data.display.paging.totalPage++;
+	        _data.display.paging.tempCount = 0;
+	    }
+	};
 
-	var test = function() {
-	    // function isPrime(str, element) {
-	    //     return element.t == "a";
-	    // }
-	    //
-	    abcd1.forEach(function (abcd11, i) {
-	        var obj = abcd2.find(function (abcd21, j) {
-	            return abcd21.t == abcd11.t;
-	        });
-	        console.log(obj);
-	        abcd11.t = obj.tab;
-	    })
-	    console.log(abcd1);
+	var cookieService = {
+	    cookieName: "RequestStockCodeUrl_" + today,
+	    get: function get() {
+	        return Cookies.get(this.cookieName);
+	    },
+	    save: function save(data) {
+	        Cookies.set(this.cookieName, data, { expires: 1, path: '/' });
+	    },
+	    clear: function clear() {
+	        Cookies.remove(this.cookieName);
+	    }
+	};
 
-	    // var ffff = abcd1.find(function (e) {
-	    //     return e.t == this.t;
-	    // }, {t: "a"});
-	    //
-	    // ffff.t = "aaaa";
-	    //console.log(abcd1);
-	}
+	var textUploaderService = function textUploaderService(requestStockCode) {
+	    // var reqHeaders = new Headers();
+	    //     reqHeaders.append("Accept", "application/json");
+	    //     reqHeaders.append("Content-Type", "application/json");
+	    //     reqHeaders.append("X-TextUploader-API-Key", "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv");
+	    // var headers = new Headers({
+	    //     "Accept": "application/json",
+	    //     "Content-Type": "application/json",
+	    //     "X-TextUploader-API-Key": "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv"
+	    // });
+	    var body = {
+	        title: "RequestStockCode_" + today,
+	        content: requestStockCode,
+	        type: "unlisted"
+	    };
+	    // fetch('http://api.textuploader.com/v1/posts', {
+	    //     method: 'POST',
+	    //     headers: reqHeaders,
+	    //     body: JSON.stringify(body),
+	    //     mode: 'no-cors'
+	    // })
+	    // .then(function(response) {
+	    //     return response.json();
+	    // }).then(function(json) {
+	    //     cookieService.save(json.results.rawurl);
+	    // }).catch(function(ex) {
+	    //     console.log('parsing failed', ex)
+	    // });
 
-	test();
-	*/
+	    var request = $.ajax({
+	        url: "http://api.textuploader.com/v1/posts",
+	        headers: {
+	            "Accept": "application/json",
+	            "Content-Type": "application/json",
+	            "X-TextUploader-API-Key": "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv",
+	            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+	            "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
+	        },
+	        crossDomain: true,
+	        contentType: 'application/json',
+	        method: "POST",
+	        data: JSON.stringify(body),
+	        dataType: "json"
+	    });
+	    request.done(function (msg) {
+	        $("#log").html(msg);
+	    });
+	    request.fail(function (jqXHR, textStatus) {
+	        alert("Request failed: " + textStatus);
+	    });
+	};
 
 	module.exports = GeneralStore;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(447)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(444)))
 
 /***/ },
 
 /***/ 175:
-/***/ function(module, exports) {
-
-	// Copyright Joyent, Inc. and other Node contributors.
-	//
-	// Permission is hereby granted, free of charge, to any person obtaining a
-	// copy of this software and associated documentation files (the
-	// "Software"), to deal in the Software without restriction, including
-	// without limitation the rights to use, copy, modify, merge, publish,
-	// distribute, sublicense, and/or sell copies of the Software, and to permit
-	// persons to whom the Software is furnished to do so, subject to the
-	// following conditions:
-	//
-	// The above copyright notice and this permission notice shall be included
-	// in all copies or substantial portions of the Software.
-	//
-	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-	// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-	function EventEmitter() {
-	  this._events = this._events || {};
-	  this._maxListeners = this._maxListeners || undefined;
-	}
-	module.exports = EventEmitter;
-
-	// Backwards-compat with node 0.10.x
-	EventEmitter.EventEmitter = EventEmitter;
-
-	EventEmitter.prototype._events = undefined;
-	EventEmitter.prototype._maxListeners = undefined;
-
-	// By default EventEmitters will print a warning if more than 10 listeners are
-	// added to it. This is a useful default which helps finding memory leaks.
-	EventEmitter.defaultMaxListeners = 10;
-
-	// Obviously not all Emitters should be limited to 10. This function allows
-	// that to be increased. Set to zero for unlimited.
-	EventEmitter.prototype.setMaxListeners = function(n) {
-	  if (!isNumber(n) || n < 0 || isNaN(n))
-	    throw TypeError('n must be a positive number');
-	  this._maxListeners = n;
-	  return this;
-	};
-
-	EventEmitter.prototype.emit = function(type) {
-	  var er, handler, len, args, i, listeners;
-
-	  if (!this._events)
-	    this._events = {};
-
-	  // If there is no 'error' event listener then throw.
-	  if (type === 'error') {
-	    if (!this._events.error ||
-	        (isObject(this._events.error) && !this._events.error.length)) {
-	      er = arguments[1];
-	      if (er instanceof Error) {
-	        throw er; // Unhandled 'error' event
-	      }
-	      throw TypeError('Uncaught, unspecified "error" event.');
-	    }
-	  }
-
-	  handler = this._events[type];
-
-	  if (isUndefined(handler))
-	    return false;
-
-	  if (isFunction(handler)) {
-	    switch (arguments.length) {
-	      // fast cases
-	      case 1:
-	        handler.call(this);
-	        break;
-	      case 2:
-	        handler.call(this, arguments[1]);
-	        break;
-	      case 3:
-	        handler.call(this, arguments[1], arguments[2]);
-	        break;
-	      // slower
-	      default:
-	        args = Array.prototype.slice.call(arguments, 1);
-	        handler.apply(this, args);
-	    }
-	  } else if (isObject(handler)) {
-	    args = Array.prototype.slice.call(arguments, 1);
-	    listeners = handler.slice();
-	    len = listeners.length;
-	    for (i = 0; i < len; i++)
-	      listeners[i].apply(this, args);
-	  }
-
-	  return true;
-	};
-
-	EventEmitter.prototype.addListener = function(type, listener) {
-	  var m;
-
-	  if (!isFunction(listener))
-	    throw TypeError('listener must be a function');
-
-	  if (!this._events)
-	    this._events = {};
-
-	  // To avoid recursion in the case that type === "newListener"! Before
-	  // adding it to the listeners, first emit "newListener".
-	  if (this._events.newListener)
-	    this.emit('newListener', type,
-	              isFunction(listener.listener) ?
-	              listener.listener : listener);
-
-	  if (!this._events[type])
-	    // Optimize the case of one listener. Don't need the extra array object.
-	    this._events[type] = listener;
-	  else if (isObject(this._events[type]))
-	    // If we've already got an array, just append.
-	    this._events[type].push(listener);
-	  else
-	    // Adding the second element, need to change to array.
-	    this._events[type] = [this._events[type], listener];
-
-	  // Check for listener leak
-	  if (isObject(this._events[type]) && !this._events[type].warned) {
-	    if (!isUndefined(this._maxListeners)) {
-	      m = this._maxListeners;
-	    } else {
-	      m = EventEmitter.defaultMaxListeners;
-	    }
-
-	    if (m && m > 0 && this._events[type].length > m) {
-	      this._events[type].warned = true;
-	      console.error('(node) warning: possible EventEmitter memory ' +
-	                    'leak detected. %d listeners added. ' +
-	                    'Use emitter.setMaxListeners() to increase limit.',
-	                    this._events[type].length);
-	      if (typeof console.trace === 'function') {
-	        // not supported in IE 10
-	        console.trace();
-	      }
-	    }
-	  }
-
-	  return this;
-	};
-
-	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-	EventEmitter.prototype.once = function(type, listener) {
-	  if (!isFunction(listener))
-	    throw TypeError('listener must be a function');
-
-	  var fired = false;
-
-	  function g() {
-	    this.removeListener(type, g);
-
-	    if (!fired) {
-	      fired = true;
-	      listener.apply(this, arguments);
-	    }
-	  }
-
-	  g.listener = listener;
-	  this.on(type, g);
-
-	  return this;
-	};
-
-	// emits a 'removeListener' event iff the listener was removed
-	EventEmitter.prototype.removeListener = function(type, listener) {
-	  var list, position, length, i;
-
-	  if (!isFunction(listener))
-	    throw TypeError('listener must be a function');
-
-	  if (!this._events || !this._events[type])
-	    return this;
-
-	  list = this._events[type];
-	  length = list.length;
-	  position = -1;
-
-	  if (list === listener ||
-	      (isFunction(list.listener) && list.listener === listener)) {
-	    delete this._events[type];
-	    if (this._events.removeListener)
-	      this.emit('removeListener', type, listener);
-
-	  } else if (isObject(list)) {
-	    for (i = length; i-- > 0;) {
-	      if (list[i] === listener ||
-	          (list[i].listener && list[i].listener === listener)) {
-	        position = i;
-	        break;
-	      }
-	    }
-
-	    if (position < 0)
-	      return this;
-
-	    if (list.length === 1) {
-	      list.length = 0;
-	      delete this._events[type];
-	    } else {
-	      list.splice(position, 1);
-	    }
-
-	    if (this._events.removeListener)
-	      this.emit('removeListener', type, listener);
-	  }
-
-	  return this;
-	};
-
-	EventEmitter.prototype.removeAllListeners = function(type) {
-	  var key, listeners;
-
-	  if (!this._events)
-	    return this;
-
-	  // not listening for removeListener, no need to emit
-	  if (!this._events.removeListener) {
-	    if (arguments.length === 0)
-	      this._events = {};
-	    else if (this._events[type])
-	      delete this._events[type];
-	    return this;
-	  }
-
-	  // emit removeListener for all listeners on all events
-	  if (arguments.length === 0) {
-	    for (key in this._events) {
-	      if (key === 'removeListener') continue;
-	      this.removeAllListeners(key);
-	    }
-	    this.removeAllListeners('removeListener');
-	    this._events = {};
-	    return this;
-	  }
-
-	  listeners = this._events[type];
-
-	  if (isFunction(listeners)) {
-	    this.removeListener(type, listeners);
-	  } else if (listeners) {
-	    // LIFO order
-	    while (listeners.length)
-	      this.removeListener(type, listeners[listeners.length - 1]);
-	  }
-	  delete this._events[type];
-
-	  return this;
-	};
-
-	EventEmitter.prototype.listeners = function(type) {
-	  var ret;
-	  if (!this._events || !this._events[type])
-	    ret = [];
-	  else if (isFunction(this._events[type]))
-	    ret = [this._events[type]];
-	  else
-	    ret = this._events[type].slice();
-	  return ret;
-	};
-
-	EventEmitter.prototype.listenerCount = function(type) {
-	  if (this._events) {
-	    var evlistener = this._events[type];
-
-	    if (isFunction(evlistener))
-	      return 1;
-	    else if (evlistener)
-	      return evlistener.length;
-	  }
-	  return 0;
-	};
-
-	EventEmitter.listenerCount = function(emitter, type) {
-	  return emitter.listenerCount(type);
-	};
-
-	function isFunction(arg) {
-	  return typeof arg === 'function';
-	}
-
-	function isNumber(arg) {
-	  return typeof arg === 'number';
-	}
-
-	function isObject(arg) {
-	  return typeof arg === 'object' && arg !== null;
-	}
-
-	function isUndefined(arg) {
-	  return arg === void 0;
-	}
-
-
-/***/ },
-
-/***/ 176:
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_RESULT__;/*
-	 * Date Format 1.2.3
-	 * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
-	 * MIT license
-	 *
-	 * Includes enhancements by Scott Trenda <scott.trenda.net>
-	 * and Kris Kowal <cixar.com/~kris.kowal/>
-	 *
-	 * Accepts a date, a mask, or a date and a mask.
-	 * Returns a formatted version of the given date.
-	 * The date defaults to the current date/time.
-	 * The mask defaults to dateFormat.masks.default.
-	 */
+	'use strict';
 
-	(function(global) {
-	  'use strict';
+	var React = __webpack_require__(1);
+	var PropTypes = React.PropTypes;
+	var Navbar = __webpack_require__(176).Navbar;
+	var Glyphicon = __webpack_require__(176).Glyphicon;
+	var Nav = __webpack_require__(176).Nav;
+	var NavItem = __webpack_require__(176).NavItem;
+	var NavDropdown = __webpack_require__(176).NavDropdown;
+	var MenuItem = __webpack_require__(176).MenuItem;
 
-	  var dateFormat = (function() {
-	      var token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZWN]|'[^']*'|'[^']*'/g;
-	      var timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g;
-	      var timezoneClip = /[^-+\dA-Z]/g;
-	  
-	      // Regexes and supporting functions are cached through closure
-	      return function (date, mask, utc, gmt) {
-	  
-	        // You can't provide utc if you skip other args (use the 'UTC:' mask prefix)
-	        if (arguments.length === 1 && kindOf(date) === 'string' && !/\d/.test(date)) {
-	          mask = date;
-	          date = undefined;
-	        }
-	  
-	        date = date || new Date;
-	  
-	        if(!(date instanceof Date)) {
-	          date = new Date(date);
-	        }
-	  
-	        if (isNaN(date)) {
-	          throw TypeError('Invalid date');
-	        }
-	  
-	        mask = String(dateFormat.masks[mask] || mask || dateFormat.masks['default']);
-	  
-	        // Allow setting the utc/gmt argument via the mask
-	        var maskSlice = mask.slice(0, 4);
-	        if (maskSlice === 'UTC:' || maskSlice === 'GMT:') {
-	          mask = mask.slice(4);
-	          utc = true;
-	          if (maskSlice === 'GMT:') {
-	            gmt = true;
-	          }
-	        }
-	  
-	        var _ = utc ? 'getUTC' : 'get';
-	        var d = date[_ + 'Date']();
-	        var D = date[_ + 'Day']();
-	        var m = date[_ + 'Month']();
-	        var y = date[_ + 'FullYear']();
-	        var H = date[_ + 'Hours']();
-	        var M = date[_ + 'Minutes']();
-	        var s = date[_ + 'Seconds']();
-	        var L = date[_ + 'Milliseconds']();
-	        var o = utc ? 0 : date.getTimezoneOffset();
-	        var W = getWeek(date);
-	        var N = getDayOfWeek(date);
-	        var flags = {
-	          d:    d,
-	          dd:   pad(d),
-	          ddd:  dateFormat.i18n.dayNames[D],
-	          dddd: dateFormat.i18n.dayNames[D + 7],
-	          m:    m + 1,
-	          mm:   pad(m + 1),
-	          mmm:  dateFormat.i18n.monthNames[m],
-	          mmmm: dateFormat.i18n.monthNames[m + 12],
-	          yy:   String(y).slice(2),
-	          yyyy: y,
-	          h:    H % 12 || 12,
-	          hh:   pad(H % 12 || 12),
-	          H:    H,
-	          HH:   pad(H),
-	          M:    M,
-	          MM:   pad(M),
-	          s:    s,
-	          ss:   pad(s),
-	          l:    pad(L, 3),
-	          L:    pad(Math.round(L / 10)),
-	          t:    H < 12 ? 'a'  : 'p',
-	          tt:   H < 12 ? 'am' : 'pm',
-	          T:    H < 12 ? 'A'  : 'P',
-	          TT:   H < 12 ? 'AM' : 'PM',
-	          Z:    gmt ? 'GMT' : utc ? 'UTC' : (String(date).match(timezone) || ['']).pop().replace(timezoneClip, ''),
-	          o:    (o > 0 ? '-' : '+') + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
-	          S:    ['th', 'st', 'nd', 'rd'][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10],
-	          W:    W,
-	          N:    N
-	        };
-	  
-	        return mask.replace(token, function (match) {
-	          if (match in flags) {
-	            return flags[match];
-	          }
-	          return match.slice(1, match.length - 1);
-	        });
-	      };
-	    })();
+	var text = __webpack_require__(441);
+	var GeneralAction = __webpack_require__(168);
+	var GeneralStore = __webpack_require__(174);
 
-	  dateFormat.masks = {
-	    'default':               'ddd mmm dd yyyy HH:MM:ss',
-	    'shortDate':             'm/d/yy',
-	    'mediumDate':            'mmm d, yyyy',
-	    'longDate':              'mmmm d, yyyy',
-	    'fullDate':              'dddd, mmmm d, yyyy',
-	    'shortTime':             'h:MM TT',
-	    'mediumTime':            'h:MM:ss TT',
-	    'longTime':              'h:MM:ss TT Z',
-	    'isoDate':               'yyyy-mm-dd',
-	    'isoTime':               'HH:MM:ss',
-	    'isoDateTime':           'yyyy-mm-dd\'T\'HH:MM:sso',
-	    'isoUtcDateTime':        'UTC:yyyy-mm-dd\'T\'HH:MM:ss\'Z\'',
-	    'expiresHeaderFormat':   'ddd, dd mmm yyyy HH:MM:ss Z'
-	  };
+	var Navigation = React.createClass({
+	    displayName: 'Navigation',
 
-	  // Internationalization strings
-	  dateFormat.i18n = {
-	    dayNames: [
-	      'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat',
-	      'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-	    ],
-	    monthNames: [
-	      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-	      'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
-	    ]
-	  };
+	    handleSwitchNav: function handleSwitchNav(selectedKey) {
+	        GeneralAction.switchNav(selectedKey);
+	    },
+	    render: function render() {
+	        return React.createElement(
+	            Navbar,
+	            null,
+	            React.createElement(
+	                Navbar.Header,
+	                null,
+	                React.createElement(
+	                    Navbar.Brand,
+	                    null,
+	                    React.createElement(
+	                        'a',
+	                        { href: '#' },
+	                        React.createElement(Glyphicon, { glyph: 'flash' }),
+	                        text.navBar.brand,
+	                        React.createElement(
+	                            'span',
+	                            { style: { "verticalAlign": "super", "fontSize": "8pt" } },
+	                            " beta"
+	                        )
+	                    )
+	                ),
+	                React.createElement(Navbar.Toggle, null)
+	            ),
+	            React.createElement(
+	                Navbar.Collapse,
+	                null,
+	                React.createElement(
+	                    Nav,
+	                    { onSelect: this.handleSwitchNav },
+	                    React.createElement(
+	                        NavItem,
+	                        { eventKey: 0, href: '#' },
+	                        React.createElement(Glyphicon, { glyph: 'upload' }),
+	                        text.navBar.rise
+	                    ),
+	                    React.createElement(
+	                        NavItem,
+	                        { eventKey: 1, href: '#' },
+	                        React.createElement(Glyphicon, { glyph: 'download' }),
+	                        text.navBar.fall
+	                    )
+	                )
+	            )
+	        );
+	    }
+	});
 
-	function pad(val, len) {
-	  val = String(val);
-	  len = len || 2;
-	  while (val.length < len) {
-	    val = '0' + val;
-	  }
-	  return val;
-	}
-
-	/**
-	 * Get the ISO 8601 week number
-	 * Based on comments from
-	 * http://techblog.procurios.nl/k/n618/news/view/33796/14863/Calculate-ISO-8601-week-and-year-in-javascript.html
-	 *
-	 * @param  {Object} `date`
-	 * @return {Number}
-	 */
-	function getWeek(date) {
-	  // Remove time components of date
-	  var targetThursday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-	  // Change date to Thursday same week
-	  targetThursday.setDate(targetThursday.getDate() - ((targetThursday.getDay() + 6) % 7) + 3);
-
-	  // Take January 4th as it is always in week 1 (see ISO 8601)
-	  var firstThursday = new Date(targetThursday.getFullYear(), 0, 4);
-
-	  // Change date to Thursday same week
-	  firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3);
-
-	  // Check if daylight-saving-time-switch occured and correct for it
-	  var ds = targetThursday.getTimezoneOffset() - firstThursday.getTimezoneOffset();
-	  targetThursday.setHours(targetThursday.getHours() - ds);
-
-	  // Number of weeks between target Thursday and first Thursday
-	  var weekDiff = (targetThursday - firstThursday) / (86400000*7);
-	  return 1 + Math.floor(weekDiff);
-	}
-
-	/**
-	 * Get ISO-8601 numeric representation of the day of the week
-	 * 1 (for Monday) through 7 (for Sunday)
-	 * 
-	 * @param  {Object} `date`
-	 * @return {Number}
-	 */
-	function getDayOfWeek(date) {
-	  var dow = date.getDay();
-	  if(dow === 0) {
-	    dow = 7;
-	  }
-	  return dow;
-	}
-
-	/**
-	 * kind-of shortcut
-	 * @param  {*} val
-	 * @return {String}
-	 */
-	function kindOf(val) {
-	  if (val === null) {
-	    return 'null';
-	  }
-
-	  if (val === undefined) {
-	    return 'undefined';
-	  }
-
-	  if (typeof val !== 'object') {
-	    return typeof val;
-	  }
-
-	  if (Array.isArray(val)) {
-	    return 'array';
-	  }
-
-	  return {}.toString.call(val)
-	    .slice(8, -1).toLowerCase();
-	};
-
-
-
-	  if (true) {
-	    !(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
-	      return dateFormat;
-	    }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	  } else if (typeof exports === 'object') {
-	    module.exports = dateFormat;
-	  } else {
-	    global.dateFormat = dateFormat;
-	  }
-	})(this);
-
+	module.exports = Navigation;
 
 /***/ },
 
-/***/ 177:
+/***/ 441:
 /***/ function(module, exports) {
+
+	module.exports = {
+		"navBar": {
+			"brand": "氵中氵中氵中",
+			"rise": " 漲",
+			"fall": " 跌"
+		},
+		"row": {
+			"code": "股號",
+			"name": "股名",
+			"price": "成交價",
+			"change": "漲跌",
+			"rate": "漲跌幅",
+			"volumn": "成交量",
+			"lastPrice": "昨收",
+			"lastVolumn": "昨量",
+			"open": "開",
+			"high": "高",
+			"low": "低"
+		}
+	};
+
+/***/ },
+
+/***/ 442:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var React = __webpack_require__(1);
+	var PropTypes = React.PropTypes;
+
+	var Table = __webpack_require__(176).Table;
+	var Glyphicon = __webpack_require__(176).Glyphicon;
+	var PanelGroup = __webpack_require__(176).PanelGroup;
+	var Panel = __webpack_require__(176).Panel;
+
+	var Row = __webpack_require__(443);
+
+	var Content = React.createClass({
+	    displayName: 'Content',
+
+	    render: function render() {
+	        var self = this;
+	        var PanelModule = this.props.display.data.map(function (src, i) {
+	            var symbol = self.props.navKey == 0 ? " ▲ " : " ▽ ";
+	            var change = src.change > 0 ? "+" + src.change : src.change;
+	            var rate = (src.rate > 0 ? "+" + src.rate : src.rate) + "%";
+	            var header = src.code + " " + src.name + symbol + src.realtime.z + " / " + change + " / " + rate + " / " + src.realtime.v;
+	            if (self.props.navKey == 0 && src.change > 0) {
+	                return React.createElement(
+	                    Panel,
+	                    { header: header, eventKey: i, key: i, bsStyle: 'danger' },
+	                    React.createElement(Row, { data: src })
+	                );
+	            } else if (self.props.navKey == 1 && src.change < 0) {
+	                return React.createElement(
+	                    Panel,
+	                    { header: header, eventKey: i, key: i, bsStyle: 'success' },
+	                    React.createElement(Row, { data: src })
+	                );
+	            }
+	        });
+	        return React.createElement(
+	            PanelGroup,
+	            { accordion: true },
+	            PanelModule
+	        );
+	    }
+	});
+
+	module.exports = Content;
+
+/***/ },
+
+/***/ 443:
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var React = __webpack_require__(1);
+	var PropTypes = React.PropTypes;
+	var Table = __webpack_require__(176).Table;
+
+	var text = __webpack_require__(441);
+
+	var Row = React.createClass({
+	    displayName: 'Row',
+
+	    componentDidMount: function componentDidMount() {
+	        $(".panel-body").css("padding", "0px");
+	        $(".table-responsive").css("margin-bottom", "0px");
+	        $(".table.table-striped.table-bordered.table-condensed").css("margin-bottom", "0px");
+	    },
+	    render: function render() {
+	        var data = this.props.data;
+	        var realtime = data.realtime;
+	        return React.createElement(
+	            Table,
+	            { striped: true, bordered: true, condensed: true, responsive: true },
+	            React.createElement(
+	                'thead',
+	                null,
+	                React.createElement(
+	                    'tr',
+	                    null,
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.price
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.change
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.rate
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.volumn
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.lastPrice
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.lastVolumn
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.open
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.high
+	                    ),
+	                    React.createElement(
+	                        'th',
+	                        null,
+	                        text.row.low
+	                    )
+	                )
+	            ),
+	            React.createElement(
+	                'tbody',
+	                null,
+	                React.createElement(
+	                    'tr',
+	                    null,
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.z
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        data.change > 0 ? "+" + data.change : data.change
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        (data.rate > 0 ? "+" + data.rate : data.rate) + "%"
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.v
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.y
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        data.lastVol
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.o
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.h
+	                    ),
+	                    React.createElement(
+	                        'td',
+	                        null,
+	                        realtime.l
+	                    )
+	                )
+	            )
+	        );
+	    }
+
+	});
+
+	module.exports = Row;
+
+/***/ },
+
+/***/ 444:
+/***/ function(module, exports) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/*** IMPORTS FROM imports-loader ***/
+	(function() {
 
 	(function(self) {
 	  'use strict';
@@ -1671,298 +1506,548 @@ webpackJsonp([0],{
 	})(typeof self !== 'undefined' ? self : this);
 
 
-/***/ },
-
-/***/ 178:
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
-	var Navbar = __webpack_require__(179).Navbar;
-	var Glyphicon = __webpack_require__(179).Glyphicon;
-	var Nav = __webpack_require__(179).Nav;
-	var NavItem = __webpack_require__(179).NavItem;
-	var NavDropdown = __webpack_require__(179).NavDropdown;
-	var MenuItem = __webpack_require__(179).MenuItem;
-
-	var text = __webpack_require__(444);
-	var GeneralAction = __webpack_require__(168);
-	var GeneralStore = __webpack_require__(174);
-
-	var Navigation = React.createClass({
-	    displayName: 'Navigation',
-
-	    handleSwitchNav: function handleSwitchNav(selectedKey) {
-	        GeneralAction.switchNav(selectedKey);
-	    },
-	    render: function render() {
-	        return React.createElement(
-	            Navbar,
-	            null,
-	            React.createElement(
-	                Navbar.Header,
-	                null,
-	                React.createElement(
-	                    Navbar.Brand,
-	                    null,
-	                    React.createElement(
-	                        'a',
-	                        { href: '#' },
-	                        React.createElement(Glyphicon, { glyph: 'flash' }),
-	                        text.navBar.brand,
-	                        React.createElement(
-	                            'span',
-	                            { style: { "verticalAlign": "super", "fontSize": "8pt" } },
-	                            " beta"
-	                        )
-	                    )
-	                ),
-	                React.createElement(Navbar.Toggle, null)
-	            ),
-	            React.createElement(
-	                Navbar.Collapse,
-	                null,
-	                React.createElement(
-	                    Nav,
-	                    { onSelect: this.handleSwitchNav },
-	                    React.createElement(
-	                        NavItem,
-	                        { eventKey: 0, href: '#' },
-	                        React.createElement(Glyphicon, { glyph: 'upload' }),
-	                        text.navBar.rise
-	                    ),
-	                    React.createElement(
-	                        NavItem,
-	                        { eventKey: 1, href: '#' },
-	                        React.createElement(Glyphicon, { glyph: 'download' }),
-	                        text.navBar.fall
-	                    )
-	                )
-	            )
-	        );
-	    }
-	});
-
-	module.exports = Navigation;
-
-/***/ },
-
-/***/ 444:
-/***/ function(module, exports) {
-
-	module.exports = {
-		"navBar": {
-			"brand": "氵中氵中氵中",
-			"rise": " 漲",
-			"fall": " 跌"
-		},
-		"row": {
-			"code": "股號",
-			"name": "股名",
-			"price": "成交價",
-			"change": "漲跌",
-			"rate": "漲跌幅",
-			"volumn": "成交量",
-			"lastPrice": "昨收",
-			"lastVolumn": "昨量",
-			"open": "開",
-			"high": "高",
-			"low": "低"
-		}
-	};
+	/*** EXPORTS FROM exports-loader ***/
+	module.exports = global.fetch;
+	}.call(global));
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 
 /***/ 445:
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	'use strict';
+	// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
+	function EventEmitter() {
+	  this._events = this._events || {};
+	  this._maxListeners = this._maxListeners || undefined;
+	}
+	module.exports = EventEmitter;
 
-	var Table = __webpack_require__(179).Table;
-	var Glyphicon = __webpack_require__(179).Glyphicon;
-	var PanelGroup = __webpack_require__(179).PanelGroup;
-	var Panel = __webpack_require__(179).Panel;
+	// Backwards-compat with node 0.10.x
+	EventEmitter.EventEmitter = EventEmitter;
 
-	var Row = __webpack_require__(446);
+	EventEmitter.prototype._events = undefined;
+	EventEmitter.prototype._maxListeners = undefined;
 
-	var Content = React.createClass({
-	    displayName: 'Content',
+	// By default EventEmitters will print a warning if more than 10 listeners are
+	// added to it. This is a useful default which helps finding memory leaks.
+	EventEmitter.defaultMaxListeners = 10;
 
-	    render: function render() {
-	        var self = this;
-	        var PanelModule = this.props.display.data.map(function (src, i) {
-	            var symbol = self.props.navKey == 0 ? " ▲ " : " ▽ ";
-	            var change = src.change > 0 ? "+" + src.change : src.change;
-	            var rate = (src.rate > 0 ? "+" + src.rate : src.rate) + "%";
-	            var header = src.code + " " + src.name + symbol + src.realtime.z + " / " + change + " / " + rate + " / " + src.realtime.v;
-	            if (self.props.navKey == 0 && src.change > 0) {
-	                return React.createElement(
-	                    Panel,
-	                    { header: header, eventKey: i, key: i, bsStyle: 'danger' },
-	                    React.createElement(Row, { data: src })
-	                );
-	            } else if (self.props.navKey == 1 && src.change < 0) {
-	                return React.createElement(
-	                    Panel,
-	                    { header: header, eventKey: i, key: i, bsStyle: 'success' },
-	                    React.createElement(Row, { data: src })
-	                );
-	            }
-	        });
-	        return React.createElement(
-	            PanelGroup,
-	            { accordion: true },
-	            PanelModule
-	        );
+	// Obviously not all Emitters should be limited to 10. This function allows
+	// that to be increased. Set to zero for unlimited.
+	EventEmitter.prototype.setMaxListeners = function(n) {
+	  if (!isNumber(n) || n < 0 || isNaN(n))
+	    throw TypeError('n must be a positive number');
+	  this._maxListeners = n;
+	  return this;
+	};
+
+	EventEmitter.prototype.emit = function(type) {
+	  var er, handler, len, args, i, listeners;
+
+	  if (!this._events)
+	    this._events = {};
+
+	  // If there is no 'error' event listener then throw.
+	  if (type === 'error') {
+	    if (!this._events.error ||
+	        (isObject(this._events.error) && !this._events.error.length)) {
+	      er = arguments[1];
+	      if (er instanceof Error) {
+	        throw er; // Unhandled 'error' event
+	      }
+	      throw TypeError('Uncaught, unspecified "error" event.');
 	    }
-	});
+	  }
 
-	module.exports = Content;
+	  handler = this._events[type];
+
+	  if (isUndefined(handler))
+	    return false;
+
+	  if (isFunction(handler)) {
+	    switch (arguments.length) {
+	      // fast cases
+	      case 1:
+	        handler.call(this);
+	        break;
+	      case 2:
+	        handler.call(this, arguments[1]);
+	        break;
+	      case 3:
+	        handler.call(this, arguments[1], arguments[2]);
+	        break;
+	      // slower
+	      default:
+	        args = Array.prototype.slice.call(arguments, 1);
+	        handler.apply(this, args);
+	    }
+	  } else if (isObject(handler)) {
+	    args = Array.prototype.slice.call(arguments, 1);
+	    listeners = handler.slice();
+	    len = listeners.length;
+	    for (i = 0; i < len; i++)
+	      listeners[i].apply(this, args);
+	  }
+
+	  return true;
+	};
+
+	EventEmitter.prototype.addListener = function(type, listener) {
+	  var m;
+
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+
+	  if (!this._events)
+	    this._events = {};
+
+	  // To avoid recursion in the case that type === "newListener"! Before
+	  // adding it to the listeners, first emit "newListener".
+	  if (this._events.newListener)
+	    this.emit('newListener', type,
+	              isFunction(listener.listener) ?
+	              listener.listener : listener);
+
+	  if (!this._events[type])
+	    // Optimize the case of one listener. Don't need the extra array object.
+	    this._events[type] = listener;
+	  else if (isObject(this._events[type]))
+	    // If we've already got an array, just append.
+	    this._events[type].push(listener);
+	  else
+	    // Adding the second element, need to change to array.
+	    this._events[type] = [this._events[type], listener];
+
+	  // Check for listener leak
+	  if (isObject(this._events[type]) && !this._events[type].warned) {
+	    if (!isUndefined(this._maxListeners)) {
+	      m = this._maxListeners;
+	    } else {
+	      m = EventEmitter.defaultMaxListeners;
+	    }
+
+	    if (m && m > 0 && this._events[type].length > m) {
+	      this._events[type].warned = true;
+	      console.error('(node) warning: possible EventEmitter memory ' +
+	                    'leak detected. %d listeners added. ' +
+	                    'Use emitter.setMaxListeners() to increase limit.',
+	                    this._events[type].length);
+	      if (typeof console.trace === 'function') {
+	        // not supported in IE 10
+	        console.trace();
+	      }
+	    }
+	  }
+
+	  return this;
+	};
+
+	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+	EventEmitter.prototype.once = function(type, listener) {
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+
+	  var fired = false;
+
+	  function g() {
+	    this.removeListener(type, g);
+
+	    if (!fired) {
+	      fired = true;
+	      listener.apply(this, arguments);
+	    }
+	  }
+
+	  g.listener = listener;
+	  this.on(type, g);
+
+	  return this;
+	};
+
+	// emits a 'removeListener' event iff the listener was removed
+	EventEmitter.prototype.removeListener = function(type, listener) {
+	  var list, position, length, i;
+
+	  if (!isFunction(listener))
+	    throw TypeError('listener must be a function');
+
+	  if (!this._events || !this._events[type])
+	    return this;
+
+	  list = this._events[type];
+	  length = list.length;
+	  position = -1;
+
+	  if (list === listener ||
+	      (isFunction(list.listener) && list.listener === listener)) {
+	    delete this._events[type];
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+
+	  } else if (isObject(list)) {
+	    for (i = length; i-- > 0;) {
+	      if (list[i] === listener ||
+	          (list[i].listener && list[i].listener === listener)) {
+	        position = i;
+	        break;
+	      }
+	    }
+
+	    if (position < 0)
+	      return this;
+
+	    if (list.length === 1) {
+	      list.length = 0;
+	      delete this._events[type];
+	    } else {
+	      list.splice(position, 1);
+	    }
+
+	    if (this._events.removeListener)
+	      this.emit('removeListener', type, listener);
+	  }
+
+	  return this;
+	};
+
+	EventEmitter.prototype.removeAllListeners = function(type) {
+	  var key, listeners;
+
+	  if (!this._events)
+	    return this;
+
+	  // not listening for removeListener, no need to emit
+	  if (!this._events.removeListener) {
+	    if (arguments.length === 0)
+	      this._events = {};
+	    else if (this._events[type])
+	      delete this._events[type];
+	    return this;
+	  }
+
+	  // emit removeListener for all listeners on all events
+	  if (arguments.length === 0) {
+	    for (key in this._events) {
+	      if (key === 'removeListener') continue;
+	      this.removeAllListeners(key);
+	    }
+	    this.removeAllListeners('removeListener');
+	    this._events = {};
+	    return this;
+	  }
+
+	  listeners = this._events[type];
+
+	  if (isFunction(listeners)) {
+	    this.removeListener(type, listeners);
+	  } else if (listeners) {
+	    // LIFO order
+	    while (listeners.length)
+	      this.removeListener(type, listeners[listeners.length - 1]);
+	  }
+	  delete this._events[type];
+
+	  return this;
+	};
+
+	EventEmitter.prototype.listeners = function(type) {
+	  var ret;
+	  if (!this._events || !this._events[type])
+	    ret = [];
+	  else if (isFunction(this._events[type]))
+	    ret = [this._events[type]];
+	  else
+	    ret = this._events[type].slice();
+	  return ret;
+	};
+
+	EventEmitter.prototype.listenerCount = function(type) {
+	  if (this._events) {
+	    var evlistener = this._events[type];
+
+	    if (isFunction(evlistener))
+	      return 1;
+	    else if (evlistener)
+	      return evlistener.length;
+	  }
+	  return 0;
+	};
+
+	EventEmitter.listenerCount = function(emitter, type) {
+	  return emitter.listenerCount(type);
+	};
+
+	function isFunction(arg) {
+	  return typeof arg === 'function';
+	}
+
+	function isNumber(arg) {
+	  return typeof arg === 'number';
+	}
+
+	function isObject(arg) {
+	  return typeof arg === 'object' && arg !== null;
+	}
+
+	function isUndefined(arg) {
+	  return arg === void 0;
+	}
+
 
 /***/ },
 
 /***/ 446:
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	var __WEBPACK_AMD_DEFINE_RESULT__;/*
+	 * Date Format 1.2.3
+	 * (c) 2007-2009 Steven Levithan <stevenlevithan.com>
+	 * MIT license
+	 *
+	 * Includes enhancements by Scott Trenda <scott.trenda.net>
+	 * and Kris Kowal <cixar.com/~kris.kowal/>
+	 *
+	 * Accepts a date, a mask, or a date and a mask.
+	 * Returns a formatted version of the given date.
+	 * The date defaults to the current date/time.
+	 * The mask defaults to dateFormat.masks.default.
+	 */
 
-	var React = __webpack_require__(1);
-	var PropTypes = React.PropTypes;
-	var Table = __webpack_require__(179).Table;
+	(function(global) {
+	  'use strict';
 
-	var text = __webpack_require__(444);
+	  var dateFormat = (function() {
+	      var token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZWN]|'[^']*'|'[^']*'/g;
+	      var timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g;
+	      var timezoneClip = /[^-+\dA-Z]/g;
+	  
+	      // Regexes and supporting functions are cached through closure
+	      return function (date, mask, utc, gmt) {
+	  
+	        // You can't provide utc if you skip other args (use the 'UTC:' mask prefix)
+	        if (arguments.length === 1 && kindOf(date) === 'string' && !/\d/.test(date)) {
+	          mask = date;
+	          date = undefined;
+	        }
+	  
+	        date = date || new Date;
+	  
+	        if(!(date instanceof Date)) {
+	          date = new Date(date);
+	        }
+	  
+	        if (isNaN(date)) {
+	          throw TypeError('Invalid date');
+	        }
+	  
+	        mask = String(dateFormat.masks[mask] || mask || dateFormat.masks['default']);
+	  
+	        // Allow setting the utc/gmt argument via the mask
+	        var maskSlice = mask.slice(0, 4);
+	        if (maskSlice === 'UTC:' || maskSlice === 'GMT:') {
+	          mask = mask.slice(4);
+	          utc = true;
+	          if (maskSlice === 'GMT:') {
+	            gmt = true;
+	          }
+	        }
+	  
+	        var _ = utc ? 'getUTC' : 'get';
+	        var d = date[_ + 'Date']();
+	        var D = date[_ + 'Day']();
+	        var m = date[_ + 'Month']();
+	        var y = date[_ + 'FullYear']();
+	        var H = date[_ + 'Hours']();
+	        var M = date[_ + 'Minutes']();
+	        var s = date[_ + 'Seconds']();
+	        var L = date[_ + 'Milliseconds']();
+	        var o = utc ? 0 : date.getTimezoneOffset();
+	        var W = getWeek(date);
+	        var N = getDayOfWeek(date);
+	        var flags = {
+	          d:    d,
+	          dd:   pad(d),
+	          ddd:  dateFormat.i18n.dayNames[D],
+	          dddd: dateFormat.i18n.dayNames[D + 7],
+	          m:    m + 1,
+	          mm:   pad(m + 1),
+	          mmm:  dateFormat.i18n.monthNames[m],
+	          mmmm: dateFormat.i18n.monthNames[m + 12],
+	          yy:   String(y).slice(2),
+	          yyyy: y,
+	          h:    H % 12 || 12,
+	          hh:   pad(H % 12 || 12),
+	          H:    H,
+	          HH:   pad(H),
+	          M:    M,
+	          MM:   pad(M),
+	          s:    s,
+	          ss:   pad(s),
+	          l:    pad(L, 3),
+	          L:    pad(Math.round(L / 10)),
+	          t:    H < 12 ? 'a'  : 'p',
+	          tt:   H < 12 ? 'am' : 'pm',
+	          T:    H < 12 ? 'A'  : 'P',
+	          TT:   H < 12 ? 'AM' : 'PM',
+	          Z:    gmt ? 'GMT' : utc ? 'UTC' : (String(date).match(timezone) || ['']).pop().replace(timezoneClip, ''),
+	          o:    (o > 0 ? '-' : '+') + pad(Math.floor(Math.abs(o) / 60) * 100 + Math.abs(o) % 60, 4),
+	          S:    ['th', 'st', 'nd', 'rd'][d % 10 > 3 ? 0 : (d % 100 - d % 10 != 10) * d % 10],
+	          W:    W,
+	          N:    N
+	        };
+	  
+	        return mask.replace(token, function (match) {
+	          if (match in flags) {
+	            return flags[match];
+	          }
+	          return match.slice(1, match.length - 1);
+	        });
+	      };
+	    })();
 
-	var Row = React.createClass({
-	    displayName: 'Row',
+	  dateFormat.masks = {
+	    'default':               'ddd mmm dd yyyy HH:MM:ss',
+	    'shortDate':             'm/d/yy',
+	    'mediumDate':            'mmm d, yyyy',
+	    'longDate':              'mmmm d, yyyy',
+	    'fullDate':              'dddd, mmmm d, yyyy',
+	    'shortTime':             'h:MM TT',
+	    'mediumTime':            'h:MM:ss TT',
+	    'longTime':              'h:MM:ss TT Z',
+	    'isoDate':               'yyyy-mm-dd',
+	    'isoTime':               'HH:MM:ss',
+	    'isoDateTime':           'yyyy-mm-dd\'T\'HH:MM:sso',
+	    'isoUtcDateTime':        'UTC:yyyy-mm-dd\'T\'HH:MM:ss\'Z\'',
+	    'expiresHeaderFormat':   'ddd, dd mmm yyyy HH:MM:ss Z'
+	  };
 
-	    componentDidMount: function componentDidMount() {
-	        $(".panel-body").css("padding", "0px");
-	        $(".table-responsive").css("margin-bottom", "0px");
-	        $(".table.table-striped.table-bordered.table-condensed").css("margin-bottom", "0px");
-	    },
-	    render: function render() {
-	        var data = this.props.data;
-	        var realtime = data.realtime;
-	        return React.createElement(
-	            Table,
-	            { striped: true, bordered: true, condensed: true, responsive: true },
-	            React.createElement(
-	                'thead',
-	                null,
-	                React.createElement(
-	                    'tr',
-	                    null,
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.price
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.change
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.rate
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.volumn
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.lastPrice
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.lastVolumn
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.open
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.high
-	                    ),
-	                    React.createElement(
-	                        'th',
-	                        null,
-	                        text.row.low
-	                    )
-	                )
-	            ),
-	            React.createElement(
-	                'tbody',
-	                null,
-	                React.createElement(
-	                    'tr',
-	                    null,
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.z
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        data.change > 0 ? "+" + data.change : data.change
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        (data.rate > 0 ? "+" + data.rate : data.rate) + "%"
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.v
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.y
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        data.lastVol
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.o
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.h
-	                    ),
-	                    React.createElement(
-	                        'td',
-	                        null,
-	                        realtime.l
-	                    )
-	                )
-	            )
-	        );
-	    }
+	  // Internationalization strings
+	  dateFormat.i18n = {
+	    dayNames: [
+	      'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat',
+	      'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+	    ],
+	    monthNames: [
+	      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+	      'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
+	    ]
+	  };
 
-	});
+	function pad(val, len) {
+	  val = String(val);
+	  len = len || 2;
+	  while (val.length < len) {
+	    val = '0' + val;
+	  }
+	  return val;
+	}
 
-	module.exports = Row;
+	/**
+	 * Get the ISO 8601 week number
+	 * Based on comments from
+	 * http://techblog.procurios.nl/k/n618/news/view/33796/14863/Calculate-ISO-8601-week-and-year-in-javascript.html
+	 *
+	 * @param  {Object} `date`
+	 * @return {Number}
+	 */
+	function getWeek(date) {
+	  // Remove time components of date
+	  var targetThursday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+	  // Change date to Thursday same week
+	  targetThursday.setDate(targetThursday.getDate() - ((targetThursday.getDay() + 6) % 7) + 3);
+
+	  // Take January 4th as it is always in week 1 (see ISO 8601)
+	  var firstThursday = new Date(targetThursday.getFullYear(), 0, 4);
+
+	  // Change date to Thursday same week
+	  firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3);
+
+	  // Check if daylight-saving-time-switch occured and correct for it
+	  var ds = targetThursday.getTimezoneOffset() - firstThursday.getTimezoneOffset();
+	  targetThursday.setHours(targetThursday.getHours() - ds);
+
+	  // Number of weeks between target Thursday and first Thursday
+	  var weekDiff = (targetThursday - firstThursday) / (86400000*7);
+	  return 1 + Math.floor(weekDiff);
+	}
+
+	/**
+	 * Get ISO-8601 numeric representation of the day of the week
+	 * 1 (for Monday) through 7 (for Sunday)
+	 * 
+	 * @param  {Object} `date`
+	 * @return {Number}
+	 */
+	function getDayOfWeek(date) {
+	  var dow = date.getDay();
+	  if(dow === 0) {
+	    dow = 7;
+	  }
+	  return dow;
+	}
+
+	/**
+	 * kind-of shortcut
+	 * @param  {*} val
+	 * @return {String}
+	 */
+	function kindOf(val) {
+	  if (val === null) {
+	    return 'null';
+	  }
+
+	  if (val === undefined) {
+	    return 'undefined';
+	  }
+
+	  if (typeof val !== 'object') {
+	    return typeof val;
+	  }
+
+	  if (Array.isArray(val)) {
+	    return 'array';
+	  }
+
+	  return {}.toString.call(val)
+	    .slice(8, -1).toLowerCase();
+	};
+
+
+
+	  if (true) {
+	    !(__WEBPACK_AMD_DEFINE_RESULT__ = function () {
+	      return dateFormat;
+	    }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	  } else if (typeof exports === 'object') {
+	    module.exports = dateFormat;
+	  } else {
+	    global.dateFormat = dateFormat;
+	  }
+	})(this);
+
 
 /***/ },
 
@@ -2404,8 +2489,163 @@ webpackJsonp([0],{
 	})(typeof self !== 'undefined' ? self : this);
 
 
-	/*** EXPORTS FROM exports-loader ***/
-	module.exports = self.fetch;
+/***/ },
+
+/***/ 448:
+/***/ function(module, exports, __webpack_require__) {
+
+	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	 * JavaScript Cookie v2.1.2
+	 * https://github.com/js-cookie/js-cookie
+	 *
+	 * Copyright 2006, 2015 Klaus Hartl & Fagner Brack
+	 * Released under the MIT license
+	 */
+	;(function (factory) {
+		if (true) {
+			!(__WEBPACK_AMD_DEFINE_FACTORY__ = (factory), __WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ? (__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) : __WEBPACK_AMD_DEFINE_FACTORY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+		} else if (typeof exports === 'object') {
+			module.exports = factory();
+		} else {
+			var OldCookies = window.Cookies;
+			var api = window.Cookies = factory();
+			api.noConflict = function () {
+				window.Cookies = OldCookies;
+				return api;
+			};
+		}
+	}(function () {
+		function extend () {
+			var i = 0;
+			var result = {};
+			for (; i < arguments.length; i++) {
+				var attributes = arguments[ i ];
+				for (var key in attributes) {
+					result[key] = attributes[key];
+				}
+			}
+			return result;
+		}
+
+		function init (converter) {
+			function api (key, value, attributes) {
+				var result;
+				if (typeof document === 'undefined') {
+					return;
+				}
+
+				// Write
+
+				if (arguments.length > 1) {
+					attributes = extend({
+						path: '/'
+					}, api.defaults, attributes);
+
+					if (typeof attributes.expires === 'number') {
+						var expires = new Date();
+						expires.setMilliseconds(expires.getMilliseconds() + attributes.expires * 864e+5);
+						attributes.expires = expires;
+					}
+
+					try {
+						result = JSON.stringify(value);
+						if (/^[\{\[]/.test(result)) {
+							value = result;
+						}
+					} catch (e) {}
+
+					if (!converter.write) {
+						value = encodeURIComponent(String(value))
+							.replace(/%(23|24|26|2B|3A|3C|3E|3D|2F|3F|40|5B|5D|5E|60|7B|7D|7C)/g, decodeURIComponent);
+					} else {
+						value = converter.write(value, key);
+					}
+
+					key = encodeURIComponent(String(key));
+					key = key.replace(/%(23|24|26|2B|5E|60|7C)/g, decodeURIComponent);
+					key = key.replace(/[\(\)]/g, escape);
+
+					return (document.cookie = [
+						key, '=', value,
+						attributes.expires && '; expires=' + attributes.expires.toUTCString(), // use expires attribute, max-age is not supported by IE
+						attributes.path    && '; path=' + attributes.path,
+						attributes.domain  && '; domain=' + attributes.domain,
+						attributes.secure ? '; secure' : ''
+					].join(''));
+				}
+
+				// Read
+
+				if (!key) {
+					result = {};
+				}
+
+				// To prevent the for loop in the first place assign an empty array
+				// in case there are no cookies at all. Also prevents odd result when
+				// calling "get()"
+				var cookies = document.cookie ? document.cookie.split('; ') : [];
+				var rdecode = /(%[0-9A-Z]{2})+/g;
+				var i = 0;
+
+				for (; i < cookies.length; i++) {
+					var parts = cookies[i].split('=');
+					var cookie = parts.slice(1).join('=');
+
+					if (cookie.charAt(0) === '"') {
+						cookie = cookie.slice(1, -1);
+					}
+
+					try {
+						var name = parts[0].replace(rdecode, decodeURIComponent);
+						cookie = converter.read ?
+							converter.read(cookie, name) : converter(cookie, name) ||
+							cookie.replace(rdecode, decodeURIComponent);
+
+						if (this.json) {
+							try {
+								cookie = JSON.parse(cookie);
+							} catch (e) {}
+						}
+
+						if (key === name) {
+							result = cookie;
+							break;
+						}
+
+						if (!key) {
+							result[name] = cookie;
+						}
+					} catch (e) {}
+				}
+
+				return result;
+			}
+
+			api.set = api;
+			api.get = function (key) {
+				return api(key);
+			};
+			api.getJSON = function () {
+				return api.apply({
+					json: true
+				}, [].slice.call(arguments));
+			};
+			api.defaults = {};
+
+			api.remove = function (key, attributes) {
+				api(key, '', extend(attributes, {
+					expires: -1
+				}));
+			};
+
+			api.withConverter = init;
+
+			return api;
+		}
+
+		return init(function () {});
+	}));
+
 
 /***/ }
 

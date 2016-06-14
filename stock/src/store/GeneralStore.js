@@ -1,11 +1,15 @@
 var EventEmitter = require('events').EventEmitter;
 var assign = require('object-assign');
 var dateFormat = require('dateformat');
+var Cookies = require('js-cookie');
 require('whatwg-fetch');
 
 var AppDispatcher = require('../common/AppDispatcher');
 var GeneralConstants = require('../constants/GeneralConstants');
 var CHANGE_EVENT = 'change';
+
+var now = new Date();
+var today = dateFormat(now, "yyyyMMdd");
 
 /*
 display: {
@@ -30,14 +34,23 @@ var _data = {
         data: [],
         paging: {
             limit: 0,
-            page: 0,
-            totalPage: 0,
-            totalCount: 0
+            page: 1,
+            totalPage: 1,
+            totalCount: 0,
+            tempCount: 0
+        },
+        filter: {
+            volMultiple: 0.33,
+            lastVol: 500
         }
     },
     background: {
         base: {},
-        base500: {}
+        base500: {},
+        requestStockCode: [],
+        filter: {
+            risePercentage: 0.3
+        }
     },
     navKey: 0
 };
@@ -89,24 +102,15 @@ var isTradingTime = function (workday) {
 
 // load base data
 var initial = function() {
-    var now = new Date();
     now.setDate(now.getDate()-1);
     // var fileUrl = "../../data/" + dateFormat(now, "yyyymmdd") + "_base.json";
     var fileUrl1 = "../../data/20160611_base_500.json";
-    var fileUrl2 = "../../data/20160611_base.json";
     fetch(fileUrl1)
         .then(function(response) {
             return response.json();
         }).then(function(json) {
             _data.background.base500 = json;
-            fetch(fileUrl2)
-                .then(function(response) {
-                    return response.json();
-                }).then(function(json) {
-                    _data.background.base = json;
-                }).catch(function(ex) {
-                    console.log('parsing failed', ex)
-                });
+            genRequestStockCodeService();
         }).catch(function(ex) {
             console.log('parsing failed', ex)
         });
@@ -220,57 +224,129 @@ var fetchData = function () {
     })
 }
 
-var filterService = function (realtime_all) {
-    _data.background.base500.data.forEach(function (base, i) {
-        var realtime = realtime_all.msgArray.find(function (stock, j) {
-            return stock.c === base.code;
+var genRequestStockCodeService = function () {
+    var url = cookieService.get();
+    if(url){
+        fetch(url)
+            .then(function(response) {
+                return response.json();
+            }).then(function(json) {
+                _data.background.requestStockCode = json;
+            }).catch(function(ex) {
+                console.log('parsing failed', ex)
+            });
+            console.log(_data.background.requestStockCode);
+    }else{
+        _data.background.base500.data.forEach(function (base, i) {
+            _data.background.requestStockCode.push(base.code);
+        })
+        cookieService.clear();
+        textUploaderService(_data.background.requestStockCode);
+    }
+}
+
+var updateService = function (realtime_all) {
+    realtime_all.msgArray.forEach(function (realtime, i) {
+        var stock = _data.background.base500.data.find(function (_base, j) {
+            return realtime.c === _base.code;
         });
-        base.realtime = realtime;
-        _data.display.data.push(base);
+        stock.realtime = realtime;
+        if(filterService(stock)){
+            _data.display.data.push(stock);
+            pagingService();
+        }
     })
 }
 
-/*
-var abcd1 = [
-    {t: "a"},
-    {t: "b"},
-    {t: "c"},
-    {t: "d"}
-];
-
-var abcd2 = [
-    {t: "a", tab: "aaa"},
-    {t: "b", tab: "bbb"},
-    {t: "c", tab: "ccc"},
-    {t: "d", tab: "ddd"}
-];
-
-var test = function() {
-    // function isPrime(str, element) {
-    //     return element.t == "a";
-    // }
-    //
-    abcd1.forEach(function (abcd11, i) {
-        var obj = abcd2.find(function (abcd21, j) {
-            return abcd21.t == abcd11.t;
-        });
-        console.log(obj);
-        abcd11.t = obj.tab;
-    })
-    console.log(abcd1);
-
-    // var ffff = abcd1.find(function (e) {
-    //     return e.t == this.t;
-    // }, {t: "a"});
-    //
-    // ffff.t = "aaaa";
-    //console.log(abcd1);
+var filterService = function (stock) {
+    var result = false;
+    if(Number(stock.realtime.v) >= parseInt(stock.lastVol * _data.display.filter.volMultiple)){
+        result = true;
+    }else{
+        result = false;
+    }
+    if(stock.lastVol >= _data.display.filter.lastVol){
+        result = true;
+    }else{
+        result = false;
+    }
+    return result;
 }
 
-test();
-*/
+var pagingService = function () {
+    _data.display.paging.totalCount++;
+    _data.display.paging.tempCount++;
+    if(_data.display.paging.tempCount > _data.display.paging.limit){
+        _data.display.paging.totalPage++;
+        _data.display.paging.tempCount = 0;
+    }
+}
 
+var cookieService = {
+    cookieName: "RequestStockCodeUrl_" + today,
+    get: function () {
+        return Cookies.get(this.cookieName);
+    },
+    save: function (data) {
+        Cookies.set(this.cookieName, data, { expires: 1, path: '/' });
+    },
+    clear: function () {
+        Cookies.remove(this.cookieName);
 
+    }
+}
+
+var textUploaderService = function(requestStockCode) {
+    // var reqHeaders = new Headers();
+    //     reqHeaders.append("Accept", "application/json");
+    //     reqHeaders.append("Content-Type", "application/json");
+    //     reqHeaders.append("X-TextUploader-API-Key", "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv");
+    // var headers = new Headers({
+    //     "Accept": "application/json",
+    //     "Content-Type": "application/json",
+    //     "X-TextUploader-API-Key": "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv"
+    // });
+    var body = {
+        title: "RequestStockCode_" + today,
+        content: requestStockCode,
+        type: "unlisted"
+    }
+    // fetch('http://api.textuploader.com/v1/posts', {
+    //     method: 'POST',
+    //     headers: reqHeaders,
+    //     body: JSON.stringify(body),
+    //     mode: 'no-cors'
+    // })
+    // .then(function(response) {
+    //     return response.json();
+    // }).then(function(json) {
+    //     cookieService.save(json.results.rawurl);
+    // }).catch(function(ex) {
+    //     console.log('parsing failed', ex)
+    // });
+
+    var request = $.ajax({
+        url: "http://api.textuploader.com/v1/posts",
+        headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-TextUploader-API-Key": "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
+        },
+        crossDomain: true,
+        contentType: 'application/json',
+        method: "POST",
+        data: JSON.stringify(body),
+        dataType: "json"
+    });
+    request.done(function(msg) {
+        $("#log").html(msg);
+    });
+    request.fail(function(jqXHR, textStatus) {
+        alert("Request failed: " + textStatus);
+    });
+}
 
 
 

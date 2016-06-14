@@ -32,13 +32,13 @@ var Index = React.createClass({
     },
     render: function() {
         console.log(this.state.display);
-        // return (
-        //     <div>
-        //         <Navigation />
-        //         <Content display={this.state.display} navKey={this.state.navKey} />
-        //     </div>
-        // );
-        return null;
+        return (
+            <div>
+                <Navigation />
+                <Content display={this.state.display} navKey={this.state.navKey} />
+            </div>
+        );
+        // return null;
     }
 
 });

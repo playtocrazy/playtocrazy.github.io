@@ -20,6 +20,7 @@
     "dateformat": "^1.0.12",
     "events": "^1.1.0",
     "flux": "^2.1.1",
+    "js-cookie": "^2.1.2",
     "object-assign": "^4.1.0",
     "react": "^15.1.0",
     "react-bootstrap": "^0.29.4",
