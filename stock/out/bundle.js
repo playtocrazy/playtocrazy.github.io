@@ -534,7 +534,8 @@ webpackJsonp([0],{
 	        return response.json();
 	    }).then(function (json) {
 	        _data.background.base500 = json;
-	        genRequestStockCodeService();
+	        //genRequestStockCodeService();
+	        testGet();
 	    }).catch(function (ex) {
 	        console.log('parsing failed', ex);
 	    });
@@ -764,6 +765,34 @@ webpackJsonp([0],{
 	    // request.fail(function(jqXHR, textStatus) {
 	    //     alert("Request failed: " + textStatus);
 	    // });
+	};
+
+	var testGet = function testGet() {
+	    fetch('http://mis.twse.com.tw/stock/index.jsp', {
+	        mode: 'no-cors',
+	        credentials: 'include'
+	    }).then(function (response) {
+	        console.log(response);
+	        fetch('http://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch=tse_2330.tw|otc_3293.tw&json=1&delay=0&_=1435210928008', {
+	            method: 'GET',
+	            headers: {
+	                'X-Requested-With': 'XMLHttpRequest'
+	            },
+	            mode: 'no-cors',
+	            credentials: 'include',
+	            referrer: "no-referrer",
+	            referrerPolicy: "origin-when-cross-origin"
+	        }).then(function (rsp) {
+	            console.log(rsp);
+	            return rsp.text();
+	        }).then(function (text) {
+	            console.log(JSON.parse(text));
+	        }).catch(function (ex) {
+	            console.log('parsing failed', ex);
+	        });
+	    }).catch(function (ex) {
+	        console.log('parsing failed', ex);
+	    });
 	};
 
 	module.exports = GeneralStore;
