@@ -297,10 +297,10 @@ var cookieService = {
 }
 
 var textUploaderService = function(requestStockCode) {
-    // var reqHeaders = new Headers();
-    //     reqHeaders.append("Accept", "application/json");
-    //     reqHeaders.append("Content-Type", "application/json");
-    //     reqHeaders.append("X-TextUploader-API-Key", "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv");
+    var reqHeaders = new Headers();
+        reqHeaders.append("Accept", "application/json");
+        reqHeaders.append("Content-Type", "application/json");
+        reqHeaders.append("X-TextUploader-API-Key", "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv");
     // var headers = new Headers({
     //     "Accept": "application/json",
     //     "Content-Type": "application/json",
@@ -311,41 +311,41 @@ var textUploaderService = function(requestStockCode) {
         content: requestStockCode,
         type: "unlisted"
     }
-    // fetch('http://api.textuploader.com/v1/posts', {
-    //     method: 'POST',
-    //     headers: reqHeaders,
-    //     body: JSON.stringify(body),
-    //     mode: 'no-cors'
-    // })
-    // .then(function(response) {
-    //     return response.json();
-    // }).then(function(json) {
-    //     cookieService.save(json.results.rawurl);
-    // }).catch(function(ex) {
-    //     console.log('parsing failed', ex)
-    // });
+    fetch('http://api.textuploader.com/v1/posts', {
+        method: 'POST',
+        headers: reqHeaders,
+        body: JSON.stringify(body),
+        mode: 'no-cors'
+    })
+    .then(function(response) {
+        return response.json();
+    }).then(function(json) {
+        cookieService.save(json.results.rawurl);
+    }).catch(function(ex) {
+        console.log('parsing failed', ex)
+    });
 
-    var request = $.ajax({
-        url: "http://api.textuploader.com/v1/posts",
-        headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "X-TextUploader-API-Key": "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
-        },
-        crossDomain: true,
-        contentType: 'application/json',
-        method: "POST",
-        data: JSON.stringify(body),
-        dataType: "json"
-    });
-    request.done(function(msg) {
-        $("#log").html(msg);
-    });
-    request.fail(function(jqXHR, textStatus) {
-        alert("Request failed: " + textStatus);
-    });
+    // var request = $.ajax({
+    //     url: "http://api.textuploader.com/v1/posts",
+    //     headers: {
+    //         "Accept": "application/json",
+    //         "Content-Type": "application/json",
+    //         "X-TextUploader-API-Key": "NrpI8M2IVK3v6hBapfP0W4EDg+z0vptv",
+    //         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    //         "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
+    //     },
+    //     crossDomain: true,
+    //     contentType: 'application/json',
+    //     method: "POST",
+    //     data: JSON.stringify(body),
+    //     dataType: "json"
+    // });
+    // request.done(function(msg) {
+    //     $("#log").html(msg);
+    // });
+    // request.fail(function(jqXHR, textStatus) {
+    //     alert("Request failed: " + textStatus);
+    // });
 }
 
 
