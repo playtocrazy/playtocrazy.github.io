@@ -6,8 +6,8 @@ var crawl = require('./crawl');
 var complete = require('./complete');
 
 var config = {
-    file: './out/' + dateFormat(new Date(), "yyyymmdd") + '_base.json',
-    file500: './out/' + dateFormat(new Date(), "yyyymmdd") + '_base_500.json',
+    file: '../../stock/data/' + dateFormat(new Date(), "yyyymmdd") + '_base.json',
+    file500: '../../stock/data/' + dateFormat(new Date(), "yyyymmdd") + '_base_500.json',
     minVol: 500
 }
 

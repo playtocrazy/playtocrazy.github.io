@@ -3,12 +3,12 @@ var GeneralConstants = require('../constants/GeneralConstants');
 
 var GeneralAction = {
     initial: function() {
-        AppDispatcher.dispatcher({
+        AppDispatcher.dispatch({
             actionType: GeneralConstants.INITIAL
         });
     },
     switchNav: function (key) {
-        AppDispatcher.dispatcher({
+        AppDispatcher.dispatch({
             actionType: GeneralConstants.SWITCH_NAV,
             key: key
         });

@@ -1,15 +1,11 @@
 var EventEmitter = require('events').EventEmitter;
 var assign = require('object-assign');
 var dateFormat = require('dateformat');
+require('whatwg-fetch');
 
 var AppDispatcher = require('../common/AppDispatcher');
 var GeneralConstants = require('../constants/GeneralConstants');
 var CHANGE_EVENT = 'change';
-
-var now = new Date();
-now.setDate(now.getDate()-1);
-// var base = require("../../../fetchData/out/" + dateFormat(now, "yyyymmdd") + "_base.json");
-// var base500 = require("../../../fetchData/out/" + dateFormat(now, "yyyymmdd") + "_base_500.json");
 
 /*
 display: {
@@ -62,11 +58,11 @@ var GeneralStore = assign({}, EventEmitter.prototype, {
     removeChangeListener: function(callback) {
         this.removeListener(CHANGE_EVENT, callback);
     },
-    dispatcherIndex: AppDispatcher.register(function(payload) {
-        var action = payload.action;
+    dispatcherIndex: AppDispatcher.register(function(action) {
         switch (action.actionType) {
             case GeneralConstants.INITIAL:
                 initial();
+                console.log(_data.background);
                 fetchData();
                 GeneralStore.emitChange();
                 break;
@@ -79,10 +75,41 @@ var GeneralStore = assign({}, EventEmitter.prototype, {
     })
 });
 
+var isTradingTime = function (workday) {
+    var tradingDay = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+    var currentTime = dateFormat(new Date(), "ddd,HH").split(",");
+    var dayOfWeek = currentTime[0];
+    var hours = Number(currentTime[1]);
+    if(hours >= 9 && hours <= 13 && (tradingDay.indexOf(dayOfWeek) > -1 || workday)){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 // load base data
-var initial = function () {
-    // _data.background.base = base;
-    // _data.background.base500 = base500;
+var initial = function() {
+    var now = new Date();
+    now.setDate(now.getDate()-1);
+    // var fileUrl = "../../data/" + dateFormat(now, "yyyymmdd") + "_base.json";
+    var fileUrl1 = "../../data/20160611_base_500.json";
+    var fileUrl2 = "../../data/20160611_base.json";
+    fetch(fileUrl1)
+        .then(function(response) {
+            return response.json();
+        }).then(function(json) {
+            _data.background.base500 = json;
+            fetch(fileUrl2)
+                .then(function(response) {
+                    return response.json();
+                }).then(function(json) {
+                    _data.background.base = json;
+                }).catch(function(ex) {
+                    console.log('parsing failed', ex)
+                });
+        }).catch(function(ex) {
+            console.log('parsing failed', ex)
+        });
 }
 
 var fetchData = function () {
@@ -190,7 +217,73 @@ var fetchData = function () {
         sample.change = change;
         sample.rate = rate;
         _data.display.data.push(sample);
-    })    
+    })
 }
+
+var filterService = function (realtime_all) {
+    _data.background.base500.data.forEach(function (base, i) {
+        var realtime = realtime_all.msgArray.find(function (stock, j) {
+            return stock.c === base.code;
+        });
+        base.realtime = realtime;
+        _data.display.data.push(base);
+    })
+}
+
+/*
+var abcd1 = [
+    {t: "a"},
+    {t: "b"},
+    {t: "c"},
+    {t: "d"}
+];
+
+var abcd2 = [
+    {t: "a", tab: "aaa"},
+    {t: "b", tab: "bbb"},
+    {t: "c", tab: "ccc"},
+    {t: "d", tab: "ddd"}
+];
+
+var test = function() {
+    // function isPrime(str, element) {
+    //     return element.t == "a";
+    // }
+    //
+    abcd1.forEach(function (abcd11, i) {
+        var obj = abcd2.find(function (abcd21, j) {
+            return abcd21.t == abcd11.t;
+        });
+        console.log(obj);
+        abcd11.t = obj.tab;
+    })
+    console.log(abcd1);
+
+    // var ffff = abcd1.find(function (e) {
+    //     return e.t == this.t;
+    // }, {t: "a"});
+    //
+    // ffff.t = "aaaa";
+    //console.log(abcd1);
+}
+
+test();
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 module.exports = GeneralStore;

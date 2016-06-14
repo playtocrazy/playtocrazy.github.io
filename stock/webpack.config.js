@@ -32,7 +32,10 @@ module.exports = {
     },
     plugins: [
         new webpack.optimize.CommonsChunkPlugin("common", "./out/common.js"),
-        new ExtractTextPlugin('./out/css/bundle.css')
+        new ExtractTextPlugin('./out/css/bundle.css'),
+        new webpack.ProvidePlugin({
+            'fetch': 'imports?this=>global!exports?global.fetch!whatwg-fetch'
+        })
     ]
 };
 
