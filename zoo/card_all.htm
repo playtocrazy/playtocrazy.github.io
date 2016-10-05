@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>面試大師</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <!--網站顯示圖示-->
+    <link rel="stylesheet" type="text/css" href="./css/ad.css" />
+    <link rel="stylesheet" href="./css/swiper.min.css">
+    <style type="text/css">
+        body {
+            margin-left: 0px;
+            margin-top: 0px;
+            margin-right: 0px;
+            margin-bottom: 0px;
+            position: relative;
+            height: 100%;
+        }
+        .swiper-container {
+            width: 100%;
+            height: 100%;
+        }
+        .swiper-slide {
+            text-align: center;
+            font-size: 18px;
+            background: #fff;
+
+            /* Center slide text vertically */
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: -webkit-flex;
+            display: flex;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
+            -webkit-justify-content: center;
+            justify-content: center;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            -webkit-align-items: center;
+            align-items: center;
+        }
+    </style>
+    <script src="./jsdata/jquery-2.2.3.min.js"></script>
+    <script src="./jsdata/swiper.min.js"></script>
+    <script>
+        $(document).ready(function(){
+            var swiper = new Swiper('.swiper-container', {
+                preloadImages: true
+            });
+        })
+        var goNext = function () {
+            location.href = "./page02.htm";
+        }
+    </script>
+</head>
+
+<body>
+    <!-- wrapper 網頁結構 start -->
+    <div class="fa-wrapper">
+        <!-- article 內容 start -->
+        <article>
+            <div class="swiper-container">
+                <div class="swiper-wrapper">
+                    <a href="" class="swiper-slide"><img src="img/01_1.jpg" alt=""></a>
+                    <a href="" class="swiper-slide"><img src="img/01_2.jpg" alt=""></a>
+                    <a href="./page02.htm" class="swiper-slide" onclick="goNext();"><img src="img/01_3.jpg" alt=""></a>
+                </div>
+            </div>
+        </article>
+        <!-- article 內容 end -->
+    </div>
+    <!-- wrapper 網頁結構 start -->
+</body>
+
+</html>

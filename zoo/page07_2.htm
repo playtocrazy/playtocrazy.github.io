@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta charset="utf-8" />
+    <title>面試大師</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <!--網站顯示圖示-->
+    <link rel="stylesheet" type="text/css" href="css/ad.css" />
+    <link rel="stylesheet" type="text/css" href="css/custom.css" />
+
+    <style type="text/css">
+        body {
+            margin-left: 0px;
+            margin-top: 0px;
+            margin-right: 0px;
+            margin-bottom: 0px;
+        }
+        .videoContainer {
+            margin: 0px auto;
+            width: 768px;
+            height: 576px;
+        }
+        .videoWarpper {
+            position: relative;
+        }
+        .cdContainer {
+          width: 768px;
+          height: 100%;
+          text-align: right;
+          margin: 0 auto;
+          position: absolute;
+          font-family: cursive;
+          color: blue;
+        }
+        .cdContainer:before {
+          content: '';
+          display: inline-block;
+          vertical-align: middle;
+          height: 100%;
+        }
+    </style>
+    <script src="./jsdata/jquery-2.2.3.min.js"></script>
+    <script src="./jsdata/utils.js"></script>
+    <script>
+        // var fillQuestionVideo = function () {
+        //     $('#container1').html(function(){
+        //         return "<video id='mentor' autoplay='true' width='500' controls><source src='" + q2video + "' type='video/mp4'></video>";
+        //     });
+        // }
+        var handleFinish = function () {
+            $('#mentor').attr('src', 'video/thankyou.mp4');
+            $('#mentor').get(0).play();
+            handleDetectVideoEnd();
+        }
+        var handleDetectVideoEnd = function () {
+            document.getElementById('mentor').addEventListener('ended', myHandler, false);
+            function myHandler(e) {
+                setTimeout(function(){
+                    location.href = './page08_2.htm';
+                }, 500)
+            }
+        }
+        $(document).ready(function(){
+            webcamUtil.open('mywebcam');
+            startCountDown(cdWarpper, 3, handlePlayVideo);
+        })
+    </script>
+
+</head>
+
+<body>
+    <!-- wrapper 網頁結構 start -->
+    <div class="fa-wrapper">
+        <!-- article 內容 start -->
+        <article>
+            <table>
+                <tr>
+                    <td><a href="javascript:history.back()"><img src="img/07_01.jpg" alt="" width="100%" height="auto"></a></td>
+                </tr>
+                <tr>
+                    <td valign="middle">
+                        <div class="video" onclick="handlePlayVideo();">
+                            <div class="videoContainer">
+                                <div class="videoWarpper">
+                                    <div class="cdContainer"><div id="cdWarpper"></div></div>
+                                    <video id="mentor" class="mentor" controls height="576px"><source src="video/q2.mp4" type="video/mp4"></video>
+                                </div>
+                            </div>
+                        </div>
+                        <img src="img/07_02.jpg" alt="" width="100%" height="auto">
+                    </td>
+                </tr>
+                <tr>
+                    <td><img src="img/07_03.jpg" alt="" width="100%" height="auto"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <table class="btn">
+                            <tr>
+                                <td>
+                                    <a href="javascript:void()"><img src="img/07_g1.gif" alt="" width="100%" height="auto"></a>
+                                </td>
+                                <td rowspan="2">
+                                    <p class="video">
+                                        <video id="mywebcam" autoplay="true" width="372"></video>
+                                    </p>
+                                    <img src="img/07_g3.gif" alt="" width="100%" height="auto">
+                                </td>
+                                <td rowspan="2"><img src="img/07_g4.gif" alt="" width="100%" height="auto"></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <a href="javascript:void()" onclick="webcamUtil.close(handleFinish);"><img src="img/07_g2.gif" alt="" width="100%" height="auto"></a>
+                                </td>
+                            </tr>
+                        </table>
+                        <img src="img/07_04.jpg" alt="" width="100%" height="auto">
+                    </td>
+                </tr>
+                <tr>
+                    <td><img src="img/07_05.jpg" alt="" width="100%" height="auto"></td>
+                </tr>
+            </table>
+        </article>
+        <!-- article 內容 end -->
+    </div>
+    <!-- wrapper 網頁結構 start -->
+</body>
+
+</html>

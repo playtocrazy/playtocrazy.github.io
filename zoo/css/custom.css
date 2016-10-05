@@ -1,0 +1,9 @@
+.mentorWarpper {
+    display: table;
+    position: absolute;
+}
+.mentor {
+    width: 768px;
+    display: table-cell;
+    vertical-align: middle;
+}
